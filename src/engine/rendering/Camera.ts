@@ -95,23 +95,33 @@ class Camera implements CameraOptions {
 
   public checkKeyboardInputs(): void {
     if (this.keyboardManager.isKeyDown(this.keybinds.forwards)) {
-      this.position.add(Vector3.scale(this.forward, this.movementSpeed));
+      const forward = this.forward.clone();
+      forward.y = 0;
+      this.position.add(Vector3.scale(forward.normalise(), this.movementSpeed));
     }
     if (this.keyboardManager.isKeyDown(this.keybinds.backwards)) {
-      this.position.subtract(Vector3.scale(this.forward, this.movementSpeed));
+      const forward = this.forward.clone();
+      forward.y = 0;
+      this.position.subtract(
+        Vector3.scale(forward.normalise(), this.movementSpeed)
+      );
     }
     if (this.keyboardManager.isKeyDown(this.keybinds.left)) {
+      const forward = this.forward.clone();
+      forward.y = 0;
       this.position.subtract(
         Vector3.scale(
-          Vector3.cross(this.forward, this.up).normalise(),
+          Vector3.cross(forward, this.up).normalise(),
           this.movementSpeed
         )
       );
     }
     if (this.keyboardManager.isKeyDown(this.keybinds.right)) {
+      const forward = this.forward.clone();
+      forward.y = 0;
       this.position.add(
         Vector3.scale(
-          Vector3.cross(this.forward, this.up).normalise(),
+          Vector3.cross(forward, this.up).normalise(),
           this.movementSpeed
         )
       );
