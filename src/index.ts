@@ -1,16 +1,20 @@
+import { Camera } from "./engine/rendering/Camera";
 import { Mesh } from "./engine/rendering/Mesh";
 import { Renderer } from "./engine/rendering/Renderer";
 
+const x = 1;
+const y = 0.3;
+const z = 1;
 // prettier-ignore
 const vertices = [
-  1, 1, 1,
-  1, -1, 1,
-  -1, -1, 1,
+  x, -y, z,
+  x, -y, -z,
+  -x, -y, -z,
 
-  -1, 1, 1,
-  1, 1, 1,
-  -1, -1, 1,
-].map(x => 0.5 * x)
+  -x, -y, z,
+  x, -y, z,
+  -x, -y, -z,
+]
 
 const canvas = document.querySelector("canvas");
 
@@ -21,6 +25,21 @@ if (canvas === null) {
 const renderer = await Renderer.create(canvas);
 await renderer.initialise();
 
-const mesh = new Mesh(vertices, "Cube");
+const camera = new Camera();
+const mesh = new Mesh(vertices, "Square");
 
-renderer.render(mesh);
+camera.position.x = 5;
+camera.position.y = 5;
+camera.position.z = 5;
+
+camera.lookAt.x = 0;
+camera.lookAt.y = 0;
+camera.lookAt.z = 0;
+
+function render() {
+  renderer.render(camera, mesh);
+
+  requestAnimationFrame(render);
+}
+
+render();

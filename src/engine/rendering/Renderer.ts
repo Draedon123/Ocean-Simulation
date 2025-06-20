@@ -1,3 +1,4 @@
+import { Camera } from "./Camera";
 import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
 
@@ -16,9 +17,14 @@ class Renderer {
   private readonly ctx: GPUCanvasContext;
   private readonly canvasFormat: GPUTextureFormat;
 
+  private initialised: boolean;
+
   private renderShaderModule!: Shader;
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
+
+  private perspectiveMatrix!: GPUBuffer;
+  private viewMatrix!: GPUBuffer;
   private constructor(
     private readonly device: GPUDevice,
     public readonly canvas: HTMLCanvasElement
@@ -31,6 +37,7 @@ class Renderer {
 
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.initialised = false;
 
     new ResizeObserver((entries) => {
       const canvas = entries[0];
@@ -44,6 +51,10 @@ class Renderer {
   }
 
   public async initialise(): Promise<void> {
+    if (this.initialised) {
+      return;
+    }
+
     this.ctx.configure({
       device: this.device,
       format: this.canvasFormat,
@@ -56,15 +67,51 @@ class Renderer {
 
     this.renderShaderModule.initialise(this.device);
 
+    this.perspectiveMatrix = this.device.createBuffer({
+      label: "Camera Matrix",
+      size: 16 * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.viewMatrix = this.device.createBuffer({
+      label: "Camera Matrix",
+      size: 16 * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
     const renderBindGroupLayout = this.device.createBindGroupLayout({
       label: "Render Bind Group Layout",
-      entries: [],
+      entries: [
+        {
+          binding: 0,
+          buffer: {},
+          visibility: GPUShaderStage.VERTEX,
+        },
+        {
+          binding: 1,
+          buffer: {},
+          visibility: GPUShaderStage.VERTEX,
+        },
+      ],
     });
 
     this.renderBindGroup = this.device.createBindGroup({
       label: "Render Bind Group",
       layout: renderBindGroupLayout,
-      entries: [],
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: this.perspectiveMatrix,
+          },
+        },
+        {
+          binding: 1,
+          resource: {
+            buffer: this.viewMatrix,
+          },
+        },
+      ],
     });
 
     const renderPipelineLayout = this.device.createPipelineLayout({
@@ -86,10 +133,32 @@ class Renderer {
         targets: [{ format: this.canvasFormat }],
       },
     });
+
+    this.initialised = true;
   }
 
-  public render(mesh: Mesh): void {
+  public render(camera: Camera, mesh: Mesh): void {
+    if (!this.initialised) {
+      console.error("Renderer not initialised");
+
+      return;
+    }
+
     mesh.initialise(this.device);
+
+    camera.aspectRatio = this.canvas.width / this.canvas.height;
+
+    this.device.queue.writeBuffer(
+      this.perspectiveMatrix,
+      0,
+      camera.getPerspectiveMatrix().components
+    );
+
+    this.device.queue.writeBuffer(
+      this.viewMatrix,
+      0,
+      camera.getViewMatrix().components
+    );
 
     const commandEncoder = this.device.createCommandEncoder({
       label: "Render Command Encoder",
