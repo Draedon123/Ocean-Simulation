@@ -1,8 +1,17 @@
-import { degreesToRadians } from "../utils/angles";
-import { clamp } from "../utils/clamp";
-import { KeyboardManager } from "../utils/KeyboardManager";
-import { Matrix4 } from "../utils/Matrix4";
-import { Vector3 } from "../utils/Vector3";
+import { degreesToRadians } from "@utils/angles";
+import { clamp } from "@utils/clamp";
+import { KeyboardManager } from "@utils/KeyboardManager";
+import { Matrix4 } from "@utils/Matrix4";
+import { Vector3 } from "@utils/Vector3";
+
+type Keybinds = {
+  forwards: string;
+  backwards: string;
+  left: string;
+  right: string;
+  up: string;
+  down: string;
+};
 
 type CameraOptions = {
   position: Vector3;
@@ -13,6 +22,8 @@ type CameraOptions = {
 
   movementSpeed: number;
   mouseSensitivity: number;
+
+  keybinds: Partial<Keybinds>;
 };
 
 class Camera implements CameraOptions {
@@ -24,6 +35,8 @@ class Camera implements CameraOptions {
 
   public movementSpeed: number;
   public mouseSensitivity: number;
+
+  public readonly keybinds: Keybinds;
 
   private forward: Vector3;
   private up: Vector3;
@@ -48,9 +61,16 @@ class Camera implements CameraOptions {
     this.pitch = 0;
     this.yaw = -90;
 
-    this.keyboardManager = new KeyboardManager(
-      new Set(["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft"])
-    );
+    this.keybinds = {
+      forwards: options.keybinds?.forwards ?? "KeyW",
+      backwards: options.keybinds?.backwards ?? "KeyS",
+      left: options.keybinds?.left ?? "KeyA",
+      right: options.keybinds?.right ?? "KeyD",
+      up: options.keybinds?.up ?? "Space",
+      down: options.keybinds?.down ?? "ShiftLeft",
+    };
+
+    this.keyboardManager = new KeyboardManager(Object.values(this.keybinds));
     this.addEventListeners();
   }
 
@@ -74,13 +94,13 @@ class Camera implements CameraOptions {
   }
 
   public checkKeyboardInputs(): void {
-    if (this.keyboardManager.isKeyDown("KeyW")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.forwards)) {
       this.position.add(Vector3.scale(this.forward, this.movementSpeed));
     }
-    if (this.keyboardManager.isKeyDown("KeyS")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.backwards)) {
       this.position.subtract(Vector3.scale(this.forward, this.movementSpeed));
     }
-    if (this.keyboardManager.isKeyDown("KeyA")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.left)) {
       this.position.subtract(
         Vector3.scale(
           Vector3.cross(this.forward, this.up).normalise(),
@@ -88,7 +108,7 @@ class Camera implements CameraOptions {
         )
       );
     }
-    if (this.keyboardManager.isKeyDown("KeyD")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.right)) {
       this.position.add(
         Vector3.scale(
           Vector3.cross(this.forward, this.up).normalise(),
@@ -96,10 +116,10 @@ class Camera implements CameraOptions {
         )
       );
     }
-    if (this.keyboardManager.isKeyDown("Space")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.up)) {
       this.position.y += this.movementSpeed;
     }
-    if (this.keyboardManager.isKeyDown("ShiftLeft")) {
+    if (this.keyboardManager.isKeyDown(this.keybinds.down)) {
       this.position.y -= this.movementSpeed;
     }
   }

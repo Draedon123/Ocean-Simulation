@@ -4,11 +4,13 @@ type EventListener = {
 };
 
 class KeyboardManager {
+  public keybinds: Set<string>;
   private eventListeners: EventListener[];
   private keysDown: Set<string>;
-  constructor(public keybinds: Set<string>) {
+  constructor(keybinds: Iterable<string>) {
     this.eventListeners = [];
     this.keysDown = new Set();
+    this.keybinds = new Set(keybinds);
   }
 
   public addEventListeners(): void {

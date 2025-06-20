@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@types/eslint": "^9.6.1",
+    "@types/node": "^24.0.3",
     "@webgpu/types": "^0.1.54",
     "eslint": "^9.20.0",
     "globals": "^15.14.0",

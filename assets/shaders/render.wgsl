@@ -6,8 +6,13 @@ struct VertexOutput {
   @builtin(position) position: vec4f,
 }
 
+struct Settings {
+  time: f32,
+}
+
 @group(0) @binding(0) var <uniform> perspectiveMatrix: mat4x4<f32>;
 @group(0) @binding(1) var <uniform> viewMatrix: mat4x4<f32>;
+@group(0) @binding(2) var <uniform> settings: Settings;
 
 @vertex
 fn vertexMain(vertex: Vertex) -> VertexOutput {

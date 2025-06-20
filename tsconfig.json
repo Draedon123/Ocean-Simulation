@@ -30,6 +30,11 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
 
+    "baseUrl": ".",
+    "paths": {
+      "@rendering/*": ["src/engine/rendering/*"],
+      "@utils/*": ["src/engine/utils/*"]
+    },
     "types": ["@webgpu/types"]
   },
   "include": ["src"]

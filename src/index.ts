@@ -1,8 +1,8 @@
-import { Camera } from "./engine/rendering/Camera";
-import { Mesh } from "./engine/rendering/Mesh";
-import { Renderer } from "./engine/rendering/Renderer";
-import { Loop } from "./engine/utils/Loop";
-import { Vector3 } from "./engine/utils/Vector3";
+import { Camera } from "@rendering/Camera";
+import { Mesh } from "@rendering/Mesh";
+import { Renderer } from "@rendering/Renderer";
+import { Callback, FrameData, Loop } from "@utils/Loop";
+import { Vector3 } from "@utils/Vector3";
 
 const canvas = document.querySelector("canvas");
 
@@ -15,7 +15,7 @@ canvas.addEventListener("click", () => {
 });
 
 const renderer = await Renderer.create(canvas, {
-  wireframe: true,
+  wireframe: false,
 });
 await renderer.initialise();
 
@@ -25,13 +25,15 @@ const camera = new Camera({
 const mesh = new Mesh(getSubdividedSquare(100, 10), "Square");
 const loop = new Loop();
 
-loop.addCallback(render);
-loop.start();
+const loopCallback: Callback = (data: FrameData): void => {
+  const totalTimeSeconds = data.totalTimeMS / 1000;
 
-function render() {
   camera.checkKeyboardInputs();
-  renderer.render(camera, mesh);
-}
+  renderer.render(camera, mesh, totalTimeSeconds);
+};
+
+loop.addCallback(loopCallback);
+loop.start();
 
 // TODO: INDEXED VERTICES
 function getSubdividedSquare(tiles: number, width: number): number[] {

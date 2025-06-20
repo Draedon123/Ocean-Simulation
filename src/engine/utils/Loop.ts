@@ -1,4 +1,9 @@
-type Callback = (deltaTimeMS: number) => unknown;
+type Callback = (frameData: FrameData) => unknown;
+
+type FrameData = {
+  deltaTimeMS: number;
+  totalTimeMS: number;
+};
 
 class Loop {
   private readonly callbacks: Callback[];
@@ -30,9 +35,13 @@ class Loop {
 
   public tick(tickTime: number): void {
     const deltaTime = tickTime - this.lastTick;
+    const frameData: FrameData = {
+      deltaTimeMS: deltaTime,
+      totalTimeMS: tickTime,
+    };
 
     for (const callback of this.callbacks) {
-      callback(deltaTime);
+      callback(frameData);
     }
 
     this.lastTick = tickTime;
@@ -59,3 +68,4 @@ class Loop {
 }
 
 export { Loop };
+export type { Callback, FrameData };

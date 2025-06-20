@@ -1,3 +1,4 @@
+import { Matrix4Buffer } from "@utils/Matrix4Buffer";
 import { Camera } from "./Camera";
 import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
@@ -33,8 +34,9 @@ class Renderer {
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
 
-  private perspectiveMatrix!: GPUBuffer;
-  private viewMatrix!: GPUBuffer;
+  private readonly perspectiveMatrix: Matrix4Buffer;
+  private readonly viewMatrix: Matrix4Buffer;
+  private settingsBuffer!: GPUBuffer;
   private constructor(
     private readonly device: GPUDevice,
     public readonly canvas: HTMLCanvasElement,
@@ -55,6 +57,12 @@ class Renderer {
       _settings
     );
     this.settings = settings;
+
+    this.perspectiveMatrix = new Matrix4Buffer("Perspective Matrix");
+    this.viewMatrix = new Matrix4Buffer("View Matrix");
+
+    this.perspectiveMatrix.initialise(device);
+    this.viewMatrix.initialise(device);
 
     new ResizeObserver((entries) => {
       const canvas = entries[0];
@@ -84,15 +92,9 @@ class Renderer {
 
     this.renderShaderModule.initialise(this.device);
 
-    this.perspectiveMatrix = this.device.createBuffer({
-      label: "Camera Matrix",
-      size: 16 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.viewMatrix = this.device.createBuffer({
-      label: "Camera Matrix",
-      size: 16 * Float32Array.BYTES_PER_ELEMENT,
+    this.settingsBuffer = this.device.createBuffer({
+      label: "Settings Buffer",
+      size: 1 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -109,6 +111,11 @@ class Renderer {
           buffer: {},
           visibility: GPUShaderStage.VERTEX,
         },
+        {
+          binding: 2,
+          buffer: {},
+          visibility: GPUShaderStage.VERTEX,
+        },
       ],
     });
 
@@ -119,13 +126,19 @@ class Renderer {
         {
           binding: 0,
           resource: {
-            buffer: this.perspectiveMatrix,
+            buffer: this.perspectiveMatrix.buffer,
           },
         },
         {
           binding: 1,
           resource: {
-            buffer: this.viewMatrix,
+            buffer: this.viewMatrix.buffer,
+          },
+        },
+        {
+          binding: 2,
+          resource: {
+            buffer: this.settingsBuffer,
           },
         },
       ],
@@ -157,7 +170,7 @@ class Renderer {
     this.initialised = true;
   }
 
-  public render(camera: Camera, mesh: Mesh): void {
+  public render(camera: Camera, mesh: Mesh, time: number): void {
     if (!this.initialised) {
       console.error("Renderer not initialised");
 
@@ -167,17 +180,15 @@ class Renderer {
     mesh.initialise(this.device);
 
     camera.aspectRatio = this.canvas.width / this.canvas.height;
+    this.viewMatrix.copyFrom(camera.getViewMatrix()).writeBuffer();
+    this.perspectiveMatrix
+      .copyFrom(camera.getPerspectiveMatrix())
+      .writeBuffer();
 
     this.device.queue.writeBuffer(
-      this.perspectiveMatrix,
+      this.settingsBuffer,
       0,
-      camera.getPerspectiveMatrix().components
-    );
-
-    this.device.queue.writeBuffer(
-      this.viewMatrix,
-      0,
-      camera.getViewMatrix().components
+      new Float32Array([time])
     );
 
     const commandEncoder = this.device.createCommandEncoder({
