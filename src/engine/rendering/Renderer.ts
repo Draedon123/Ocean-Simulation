@@ -13,7 +13,17 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
   ],
 };
 
+type RendererSettings = {
+  wireframe: boolean;
+};
+
 class Renderer {
+  private static readonly DEFAULT_SETTINGS: RendererSettings = {
+    wireframe: false,
+  };
+
+  public readonly settings: RendererSettings;
+
   private readonly ctx: GPUCanvasContext;
   private readonly canvasFormat: GPUTextureFormat;
 
@@ -27,7 +37,8 @@ class Renderer {
   private viewMatrix!: GPUBuffer;
   private constructor(
     private readonly device: GPUDevice,
-    public readonly canvas: HTMLCanvasElement
+    public readonly canvas: HTMLCanvasElement,
+    _settings: Partial<RendererSettings>
   ) {
     const ctx = this.canvas.getContext("webgpu");
 
@@ -38,6 +49,12 @@ class Renderer {
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
     this.initialised = false;
+
+    const settings = Object.assign(
+      structuredClone(Renderer.DEFAULT_SETTINGS),
+      _settings
+    );
+    this.settings = settings;
 
     new ResizeObserver((entries) => {
       const canvas = entries[0];
@@ -132,6 +149,9 @@ class Renderer {
         entryPoint: "fragmentMain",
         targets: [{ format: this.canvasFormat }],
       },
+      primitive: {
+        topology: this.settings.wireframe ? "line-strip" : "triangle-list",
+      },
     });
 
     this.initialised = true;
@@ -185,7 +205,10 @@ class Renderer {
     this.device.queue.submit([commandEncoder.finish()]);
   }
 
-  public static async create(canvas: HTMLCanvasElement): Promise<Renderer> {
+  public static async create(
+    canvas: HTMLCanvasElement,
+    settings: Partial<RendererSettings> = {}
+  ): Promise<Renderer> {
     if (!navigator.gpu) {
       throw new Error("WebGPU not supported");
     }
@@ -197,7 +220,7 @@ class Renderer {
 
     const device = await adapter.requestDevice();
 
-    return new Renderer(device, canvas);
+    return new Renderer(device, canvas, settings);
   }
 }
 

@@ -36,7 +36,7 @@ class Camera implements CameraOptions {
     this.position = options.position ?? new Vector3();
     this.fieldOfView = options.fieldOfView ?? 60;
     this.aspectRatio = options.aspectRatio ?? 16 / 9;
-    this.near = options.near ?? 0.1;
+    this.near = options.near ?? 0.001;
     this.far = options.far ?? 1000;
 
     this.movementSpeed = options.movementSpeed ?? 0.05;
