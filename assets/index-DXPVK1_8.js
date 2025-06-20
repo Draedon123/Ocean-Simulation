@@ -464,7 +464,7 @@ class Camera {
     this.position = options.position ?? new Vector3();
     this.fieldOfView = options.fieldOfView ?? 60;
     this.aspectRatio = options.aspectRatio ?? 16 / 9;
-    this.near = options.near ?? 0.1;
+    this.near = options.near ?? 1e-3;
     this.far = options.far ?? 1e3;
     this.movementSpeed = options.movementSpeed ?? 0.05;
     this.mouseSensitivity = options.mouseSensitivity ?? 0.1;
@@ -617,7 +617,7 @@ const vertexBufferLayout = {
   ]
 };
 class Renderer {
-  constructor(device, canvas) {
+  constructor(device, canvas, _settings) {
     this.device = device;
     this.canvas = canvas;
     const ctx = this.canvas.getContext("webgpu");
@@ -627,6 +627,11 @@ class Renderer {
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
     this.initialised = false;
+    const settings = Object.assign(
+      structuredClone(Renderer.DEFAULT_SETTINGS),
+      _settings
+    );
+    this.settings = settings;
     new ResizeObserver((entries) => {
       const canvas2 = entries[0];
       const width = canvas2.devicePixelContentBoxSize[0].inlineSize;
@@ -635,6 +640,10 @@ class Renderer {
       this.canvas.height = height;
     }).observe(this.canvas);
   }
+  static DEFAULT_SETTINGS = {
+    wireframe: false
+  };
+  settings;
   ctx;
   canvasFormat;
   initialised;
@@ -715,6 +724,9 @@ class Renderer {
         module: this.renderShaderModule.shaderModule,
         entryPoint: "fragmentMain",
         targets: [{ format: this.canvasFormat }]
+      },
+      primitive: {
+        topology: this.settings.wireframe ? "line-strip" : "triangle-list"
       }
     });
     this.initialised = true;
@@ -757,7 +769,7 @@ class Renderer {
     renderPass.end();
     this.device.queue.submit([commandEncoder.finish()]);
   }
-  static async create(canvas) {
+  static async create(canvas, settings = {}) {
     if (!navigator.gpu) {
       throw new Error("WebGPU not supported");
     }
@@ -766,7 +778,7 @@ class Renderer {
       throw new Error("No GPU Adapter found");
     }
     const device = await adapter.requestDevice();
-    return new Renderer(device, canvas);
+    return new Renderer(device, canvas, settings);
   }
 }
 
@@ -815,28 +827,6 @@ class Loop {
   }
 }
 
-const x = 1;
-const z = 1;
-const vertices = [
-  x,
-  -0.3,
-  z,
-  x,
-  -0.3,
-  -1,
-  -1,
-  -0.3,
-  -1,
-  -1,
-  -0.3,
-  z,
-  x,
-  -0.3,
-  z,
-  -1,
-  -0.3,
-  -1
-];
 const canvas = document.querySelector("canvas");
 if (canvas === null) {
   throw new Error("Could not find canvas");
@@ -844,14 +834,62 @@ if (canvas === null) {
 canvas.addEventListener("click", () => {
   canvas.requestPointerLock();
 });
-const renderer = await Renderer.create(canvas);
+const renderer = await Renderer.create(canvas, {
+  wireframe: true
+});
 await renderer.initialise();
-const camera = new Camera();
-const mesh = new Mesh(vertices, "Square");
+const camera = new Camera({
+  position: new Vector3(0, 1, 5)
+});
+const mesh = new Mesh(getSubdividedSquare(100, 10), "Square");
 const loop = new Loop();
 loop.addCallback(render);
 loop.start();
 function render() {
   camera.checkKeyboardInputs();
   renderer.render(camera, mesh);
+}
+function getSubdividedSquare(tiles, width) {
+  const tileWidth = width / tiles / 2;
+  const centringAdjustment = 0.5 * (1 - 1 / tiles) * width;
+  const baseVertices = [
+    tileWidth - centringAdjustment,
+    0,
+    -0.05 - centringAdjustment,
+    tileWidth - centringAdjustment,
+    0,
+    tileWidth - centringAdjustment,
+    -0.05 - centringAdjustment,
+    0,
+    tileWidth - centringAdjustment,
+    -0.05 - centringAdjustment,
+    0,
+    -0.05 - centringAdjustment,
+    tileWidth - centringAdjustment,
+    0,
+    -0.05 - centringAdjustment,
+    -0.05 - centringAdjustment,
+    0,
+    tileWidth - centringAdjustment
+  ];
+  const newVertices = [];
+  for (let x = 0; x < tiles; x++) {
+    for (let z = 0; z < tiles; z++) {
+      for (let i = 0; i < baseVertices.length; i++) {
+        const value = baseVertices[i];
+        switch (i % 3) {
+          case 0:
+            newVertices.push(value + x * tileWidth * 2);
+            break;
+          case 1:
+            newVertices.push(value);
+            break;
+          case 2:
+            newVertices.push(value + z * tileWidth * 2);
+            break;
+        }
+      }
+    }
+  }
+  return newVertices;
 }
