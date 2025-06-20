@@ -1,6 +1,7 @@
 import { Camera } from "./engine/rendering/Camera";
 import { Mesh } from "./engine/rendering/Mesh";
 import { Renderer } from "./engine/rendering/Renderer";
+import { Loop } from "./engine/utils/Loop";
 
 const x = 1;
 const y = 0.3;
@@ -22,24 +23,22 @@ if (canvas === null) {
   throw new Error("Could not find canvas");
 }
 
+canvas.addEventListener("click", () => {
+  canvas.requestPointerLock();
+});
+
 const renderer = await Renderer.create(canvas);
 await renderer.initialise();
 
 const camera = new Camera();
 const mesh = new Mesh(vertices, "Square");
 
-camera.position.x = 5;
-camera.position.y = 5;
-camera.position.z = 5;
+const loop = new Loop();
 
-camera.lookAt.x = 0;
-camera.lookAt.y = 0;
-camera.lookAt.z = 0;
+loop.addCallback(render);
+loop.start();
 
 function render() {
+  camera.checkKeyboardInputs();
   renderer.render(camera, mesh);
-
-  requestAnimationFrame(render);
 }
-
-render();
