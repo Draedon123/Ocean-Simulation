@@ -41,6 +41,51 @@ function degreesToRadians(degrees) {
   return degrees * DEGREES_TO_RADIANS;
 }
 
+function clamp(value, min, max) {
+  return Math.max(Math.min(value, max), min);
+}
+
+class KeyboardManager {
+  constructor(keybinds) {
+    this.keybinds = keybinds;
+    this.eventListeners = [];
+    this.keysDown = /* @__PURE__ */ new Set();
+  }
+  eventListeners;
+  keysDown;
+  addEventListeners() {
+    if (this.eventListeners.length > 0) {
+      return;
+    }
+    const onKeyDown = {
+      callback: this.onKeyDown.bind(this)
+    };
+    const onKeyUp = {
+      callback: this.onKeyUp.bind(this)
+    };
+    document.addEventListener("keydown", onKeyDown.callback);
+    document.addEventListener("keyup", onKeyUp.callback);
+  }
+  isKeyDown(key) {
+    return this.keysDown.has(key);
+  }
+  onKeyDown(event) {
+    const key = event.code;
+    if (this.keybinds.has(key)) {
+      this.keysDown.add(key);
+    }
+  }
+  onKeyUp(event) {
+    const key = event.code;
+    this.keysDown.delete(key);
+  }
+  removeEventListeners() {
+    for (const { type, callback } of this.eventListeners) {
+      document.removeEventListener(type, callback);
+    }
+  }
+}
+
 class Matrix4 {
   components;
   constructor() {
@@ -404,18 +449,33 @@ class Vector3 {
 
 class Camera {
   position;
-  lookAt;
   fieldOfView;
   aspectRatio;
   near;
   far;
+  movementSpeed;
+  mouseSensitivity;
+  forward;
+  up;
+  pitch;
+  yaw;
+  keyboardManager;
   constructor(options = {}) {
     this.position = options.position ?? new Vector3();
-    this.lookAt = options.lookAt ?? new Vector3(1, 1, 1);
     this.fieldOfView = options.fieldOfView ?? 60;
     this.aspectRatio = options.aspectRatio ?? 16 / 9;
     this.near = options.near ?? 0.1;
     this.far = options.far ?? 1e3;
+    this.movementSpeed = options.movementSpeed ?? 0.05;
+    this.mouseSensitivity = options.mouseSensitivity ?? 0.1;
+    this.forward = new Vector3(0, 0, -1);
+    this.up = new Vector3(0, 1, 0);
+    this.pitch = 0;
+    this.yaw = -90;
+    this.keyboardManager = new KeyboardManager(
+      /* @__PURE__ */ new Set(["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft"])
+    );
+    this.addEventListeners();
   }
   // TODO: CACHE
   getPerspectiveMatrix() {
@@ -428,14 +488,62 @@ class Camera {
   }
   // TODO: CACHE
   getViewMatrix() {
-    const UP = new Vector3(0, 1, 0);
-    const cameraDirection = Vector3.subtract(
-      this.lookAt,
-      this.position
-    ).normalise();
-    const cameraRight = Vector3.cross(UP, cameraDirection).normalise();
-    const cameraUp = Vector3.cross(cameraDirection, cameraRight);
-    return Matrix4.lookAt(this.position, this.lookAt, cameraUp);
+    return Matrix4.lookAt(
+      this.position,
+      Vector3.add(this.position, this.forward),
+      this.up
+    );
+  }
+  checkKeyboardInputs() {
+    if (this.keyboardManager.isKeyDown("KeyW")) {
+      this.position.add(Vector3.scale(this.forward, this.movementSpeed));
+    }
+    if (this.keyboardManager.isKeyDown("KeyS")) {
+      this.position.subtract(Vector3.scale(this.forward, this.movementSpeed));
+    }
+    if (this.keyboardManager.isKeyDown("KeyA")) {
+      this.position.subtract(
+        Vector3.scale(
+          Vector3.cross(this.forward, this.up).normalise(),
+          this.movementSpeed
+        )
+      );
+    }
+    if (this.keyboardManager.isKeyDown("KeyD")) {
+      this.position.add(
+        Vector3.scale(
+          Vector3.cross(this.forward, this.up).normalise(),
+          this.movementSpeed
+        )
+      );
+    }
+    if (this.keyboardManager.isKeyDown("Space")) {
+      this.position.y += this.movementSpeed;
+    }
+    if (this.keyboardManager.isKeyDown("ShiftLeft")) {
+      this.position.y -= this.movementSpeed;
+    }
+  }
+  addEventListeners() {
+    this.keyboardManager.addEventListeners();
+    document.addEventListener("mousemove", (event) => {
+      const deltaX = event.movementX * this.mouseSensitivity;
+      const deltaY = -event.movementY * this.mouseSensitivity;
+      this.yaw += deltaX;
+      this.pitch = clamp(-89, this.pitch + deltaY, 89);
+      const yaw = degreesToRadians(this.yaw);
+      const pitch = degreesToRadians(this.pitch);
+      const cosYaw = Math.cos(yaw);
+      const cosPitch = Math.cos(pitch);
+      const sinYaw = Math.sin(yaw);
+      const sinPitch = Math.sin(pitch);
+      const direction = new Vector3(
+        cosYaw * cosPitch,
+        sinPitch,
+        sinYaw * cosPitch
+      ).normalise();
+      this.forward = direction;
+    });
   }
 }
 
@@ -662,6 +770,51 @@ class Renderer {
   }
 }
 
+class Loop {
+  callbacks;
+  animationFrameID;
+  lastTick;
+  constructor() {
+    this.callbacks = [];
+    this.animationFrameID = null;
+    this.lastTick = 0;
+  }
+  start() {
+    if (this.animationFrameID !== null) {
+      cancelAnimationFrame(this.animationFrameID);
+    }
+    this.tick(0);
+  }
+  stop() {
+    if (this.animationFrameID === null) {
+      return;
+    }
+    cancelAnimationFrame(this.animationFrameID);
+    this.animationFrameID = null;
+  }
+  tick(tickTime) {
+    const deltaTime = tickTime - this.lastTick;
+    for (const callback of this.callbacks) {
+      callback(deltaTime);
+    }
+    this.lastTick = tickTime;
+    this.animationFrameID = requestAnimationFrame(
+      (time) => this.tick.bind(this)(time)
+    );
+  }
+  addCallback(callback) {
+    this.callbacks.push(callback);
+  }
+  removeCallback(callback) {
+    const index = this.callbacks.findIndex((x) => x === callback);
+    if (index === -1) {
+      console.warn("Callback not found");
+      return;
+    }
+    this.callbacks.splice(index, 1);
+  }
+}
+
 const x = 1;
 const z = 1;
 const vertices = [
@@ -688,18 +841,17 @@ const canvas = document.querySelector("canvas");
 if (canvas === null) {
   throw new Error("Could not find canvas");
 }
+canvas.addEventListener("click", () => {
+  canvas.requestPointerLock();
+});
 const renderer = await Renderer.create(canvas);
 await renderer.initialise();
 const camera = new Camera();
 const mesh = new Mesh(vertices, "Square");
-camera.position.x = 5;
-camera.position.y = 5;
-camera.position.z = 5;
-camera.lookAt.x = 0;
-camera.lookAt.y = 0;
-camera.lookAt.z = 0;
+const loop = new Loop();
+loop.addCallback(render);
+loop.start();
 function render() {
+  camera.checkKeyboardInputs();
   renderer.render(camera, mesh);
-  requestAnimationFrame(render);
 }
-render();
