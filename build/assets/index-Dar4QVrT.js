@@ -941,7 +941,7 @@ await renderer.initialise();
 const camera = new Camera({
   position: new Vector3(0, 1, 5)
 });
-const mesh = new Mesh(getSubdividedSquare(100, 10), "Square");
+const mesh = new Mesh(getSubdividedSquare(500, 10), "Square");
 const loop = new Loop();
 const loopCallback = (data) => {
   const totalTimeSeconds = data.totalTimeMS / 1e3;
@@ -956,20 +956,20 @@ function getSubdividedSquare(tiles, width) {
   const baseVertices = [
     tileWidth - centringAdjustment,
     0,
-    -0.05 - centringAdjustment,
+    -0.01 - centringAdjustment,
     tileWidth - centringAdjustment,
     0,
     tileWidth - centringAdjustment,
-    -0.05 - centringAdjustment,
+    -0.01 - centringAdjustment,
     0,
     tileWidth - centringAdjustment,
-    -0.05 - centringAdjustment,
+    -0.01 - centringAdjustment,
     0,
-    -0.05 - centringAdjustment,
+    -0.01 - centringAdjustment,
     tileWidth - centringAdjustment,
     0,
-    -0.05 - centringAdjustment,
-    -0.05 - centringAdjustment,
+    -0.01 - centringAdjustment,
+    -0.01 - centringAdjustment,
     0,
     tileWidth - centringAdjustment
   ];
