@@ -10,16 +10,24 @@ struct Settings {
   time: f32,
 }
 
+struct Wave {
+  frequency: f32,
+  amplitude: f32,
+  phaseConstant: f32,
+  @size(16) direction: vec2f,
+}
+
 @group(0) @binding(0) var <uniform> perspectiveMatrix: mat4x4<f32>;
 @group(0) @binding(1) var <uniform> viewMatrix: mat4x4<f32>;
 @group(0) @binding(2) var <uniform> settings: Settings;
+@group(0) @binding(3) var <storage, read> waves: array<Wave>;
 
 @vertex
 fn vertexMain(vertex: Vertex) -> VertexOutput {
   var output: VertexOutput;
   var vertexPosition: vec3f = vertex.position;
 
-  vertexPosition.y = waveFunction(vertexPosition.xz, settings.time);
+  vertexPosition.y += waveFunction(settings.time, vertexPosition.xz);
 
   output.position = perspectiveMatrix * viewMatrix * vec4f(vertexPosition, 1.0);
 
@@ -32,19 +40,17 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(0.655, 0.149, 0.929, 1.0);
 }
 
-const WAVELENGTH: f32 = 1.0;
-const FREQUENCY: f32 = 6.28318530718 / WAVELENGTH;
-const AMPLITUDE: f32 = 0.1;
-const PHASE_CONSTANT: f32 = 3.0;
-const DIRECTION: vec2f = vec2f(1.0, 0.0);
-const WAVES: u32 = 3;
-
-fn waveFunction(position: vec2f, t: f32) -> f32 {
+fn waveFunction(time: f32, position: vec2f) -> f32 {
   var output: f32;
+  var numberOfWaves:u32 = arrayLength(&waves);
 
-  for(var i: u32 = 0; i < WAVES; i++){
-    output += AMPLITUDE * sin(dot(DIRECTION, position) * FREQUENCY + t * PHASE_CONSTANT);
+  for(var i: u32 = 0; i < numberOfWaves; i++){
+    output += waveFunctionSingle(time, position, waves[i]);
   }
 
   return output;
+}
+
+fn waveFunctionSingle(time: f32, position: vec2f, wave: Wave) -> f32 {
+  return wave.amplitude * sin(dot(wave.direction, position) * wave.frequency + time * wave.phaseConstant);
 }
