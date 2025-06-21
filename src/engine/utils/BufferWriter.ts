@@ -1,3 +1,4 @@
+import { Vector2 } from "./Vector2";
 import { Vector3 } from "./Vector3";
 
 class BufferWriter {
@@ -27,6 +28,11 @@ class BufferWriter {
   public writeUint32(uint32: number): void {
     this.dataview.setUint32(this.offset, uint32, this.littleEndian);
     this.offset += 4;
+  }
+
+  public writeVec2f32(vec2f32: Vector2): void {
+    this.writeFloat32(vec2f32.x);
+    this.writeFloat32(vec2f32.y);
   }
 
   public writeVec3f32(vec3f32: Vector3): void {

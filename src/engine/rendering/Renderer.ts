@@ -2,6 +2,8 @@ import { Matrix4Buffer } from "@utils/Matrix4Buffer";
 import { Camera } from "./Camera";
 import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
+import { Wave } from "../ocean/Wave";
+import { BufferWriter } from "@utils/BufferWriter";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -16,11 +18,13 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 
 type RendererSettings = {
   wireframe: boolean;
+  waves: number;
 };
 
 class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
+    waves: 3,
   };
 
   public readonly settings: RendererSettings;
@@ -37,6 +41,7 @@ class Renderer {
   private readonly perspectiveMatrix: Matrix4Buffer;
   private readonly viewMatrix: Matrix4Buffer;
   private settingsBuffer!: GPUBuffer;
+  private wavesBuffer!: GPUBuffer;
   private constructor(
     private readonly device: GPUDevice,
     public readonly canvas: HTMLCanvasElement,
@@ -94,9 +99,28 @@ class Renderer {
 
     this.settingsBuffer = this.device.createBuffer({
       label: "Settings Buffer",
-      size: 1 * Float32Array.BYTES_PER_ELEMENT,
+      size: 2 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+    this.wavesBuffer = this.device.createBuffer({
+      label: "Waves Buffer",
+      size: this.settings.waves * Wave.BYTE_SIZE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
+    const wavesBuffer = new BufferWriter(this.settings.waves * Wave.BYTE_SIZE);
+    const waves = Array.from(Array(this.settings.waves), () => Wave.random());
+
+    for (const wave of waves) {
+      wave.writeToBuffer(wavesBuffer);
+    }
+
+    this.device.queue.writeBuffer(
+      this.wavesBuffer,
+      0,
+      wavesBuffer.toFloat32Array()
+    );
 
     const renderBindGroupLayout = this.device.createBindGroupLayout({
       label: "Render Bind Group Layout",
@@ -114,6 +138,11 @@ class Renderer {
         {
           binding: 2,
           buffer: {},
+          visibility: GPUShaderStage.VERTEX,
+        },
+        {
+          binding: 3,
+          buffer: { type: "read-only-storage" },
           visibility: GPUShaderStage.VERTEX,
         },
       ],
@@ -139,6 +168,12 @@ class Renderer {
           binding: 2,
           resource: {
             buffer: this.settingsBuffer,
+          },
+        },
+        {
+          binding: 3,
+          resource: {
+            buffer: this.wavesBuffer,
           },
         },
       ],
