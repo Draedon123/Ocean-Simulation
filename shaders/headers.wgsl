@@ -9,13 +9,13 @@ struct VertexOutput {
 
 struct Settings {
   time: f32,
+  initialFrequency: f32,
+  initialAmplitude: f32,
 }
 
 struct Wave {
-  frequency: f32,
-  amplitude: f32,
-  @align(8) phaseConstant: f32,
-  @size(12) direction: vec2f,
+  direction: vec2f,
+  speed: f32,
 }
 
 struct WaveFunctionOutput {
