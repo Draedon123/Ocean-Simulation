@@ -3,9 +3,24 @@ fn waveFunction(time: f32, position: vec2f) -> WaveFunctionOutput {
   var derivative: vec2f = vec2f(0.0, 0.0);
   var numberOfWaves: u32 = arrayLength(&waves);
 
+  // https://thebookofshaders.com/13/
+  let lacunarity: f32 = 1.25;
+  let gain: f32 = 0.55;
+
+  var frequency: f32 = waves[0].frequency;
+  var amplitude: f32 = waves[0].amplitude;
+
   for(var i: u32 = 0; i < numberOfWaves; i++){
-    displacement += waveFunctionSingle(time, position, waves[i]);
-    derivative += waveFunctionDerivative(time, position, waves[i]);
+    var wave = waves[i];
+
+    wave.frequency = frequency * lacunarity;
+    wave.amplitude = amplitude * gain;
+
+    frequency = wave.frequency;
+    amplitude = wave.amplitude;
+
+    displacement += waveFunctionSingle(time, position, wave);
+    derivative += waveFunctionDerivative(time, position, wave);
   }
 
   let normal: vec3f = normalize(cross(
@@ -22,7 +37,7 @@ fn waveFunction(time: f32, position: vec2f) -> WaveFunctionOutput {
 }
 
 fn waveFunctionSingle(time: f32, position: vec2f, wave: Wave) -> f32 {
-  return wave.amplitude * sin(dot(wave.direction, position) * wave.frequency + time * wave.phaseConstant);
+  return wave.amplitude * exp(sin(dot(wave.direction, position) * wave.frequency + time * wave.phaseConstant) - 1);
 }
 
 fn waveBinormal(derivativeX: f32) -> vec3f {
@@ -34,7 +49,7 @@ fn waveTangent(derivativeY: f32) -> vec3f {
 }
 
 fn waveFunctionDerivative(time: f32, position: vec2f, wave: Wave) -> vec2f {
-  let commonTerm: f32 = wave.amplitude * wave.frequency * cos(dot(wave.direction, position) * wave.frequency + time * wave.phaseConstant);
+  let commonTerm: f32 = waveFunctionSingle(time, position, wave) * wave.frequency * cos(dot(wave.direction, position) * wave.frequency + time * wave.phaseConstant);
   
   return wave.direction * commonTerm;
 }

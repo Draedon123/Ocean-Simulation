@@ -33,7 +33,7 @@ class Wave {
   public static random(): Wave {
     const wavelength = random(0.5, 1.5);
     const speed = random(0.4, 0.6);
-    const amplitude = random(0.1, 0.5);
+    const amplitude = random(0.1, 0.3);
     const direction = Vector2.randomUnit();
 
     return new Wave(wavelength, speed, amplitude, direction);

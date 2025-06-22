@@ -24,7 +24,7 @@ type RendererSettings = {
 class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
-    waves: 3,
+    waves: 32,
   };
 
   public readonly settings: RendererSettings;
