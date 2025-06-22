@@ -1,3 +1,5 @@
+const SEED = 0;
+
 // not static properties on class because Terser won't treeshake the class
 
 const WORD_SIZE: number = 32;
@@ -90,16 +92,22 @@ class MersenneTwister {
 /*@__PURE__*/
 // MersenneTwister is only used in development for reproducable random numbers
 const twister = import.meta.env.DEV
-  ? new MersenneTwister(0)
+  ? new MersenneTwister(SEED)
   : (null as unknown as MersenneTwister);
 
-function random(min: number, max: number): number {
-  if (import.meta.env.DEV) {
-    return twister.randomFloatRange(min, max);
-  } else {
-    const range = max - min;
+function random(range: [number, number]): number;
+function random(min: number, max: number): number;
+function random(minOrRange: number | [number, number], max?: number): number {
+  if (Array.isArray(minOrRange)) {
+    return random(minOrRange[0], minOrRange[1]);
+  }
 
-    return range * Math.random() + min;
+  if (import.meta.env.DEV) {
+    return twister.randomFloatRange(minOrRange, max as number);
+  } else {
+    const range = (max as number) - minOrRange;
+
+    return range * Math.random() + minOrRange;
   }
 }
 

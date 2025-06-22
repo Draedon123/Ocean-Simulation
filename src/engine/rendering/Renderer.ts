@@ -4,6 +4,7 @@ import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
 import { Wave } from "../ocean/Wave";
 import { BufferWriter } from "@utils/BufferWriter";
+import { random } from "@utils/random";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -19,12 +20,18 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 type RendererSettings = {
   wireframe: boolean;
   waves: number;
+  frequencyRange: [number, number];
+  amplitudeRange: [number, number];
+  speedRange: [number, number];
 };
 
 class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
     waves: 32,
+    frequencyRange: [3, 6],
+    amplitudeRange: [0.2, 0.4],
+    speedRange: [0.4, 0.6],
   };
 
   public readonly settings: RendererSettings;
@@ -97,7 +104,7 @@ class Renderer {
 
     this.settingsBuffer = this.device.createBuffer({
       label: "Settings Buffer",
-      size: 2 * Float32Array.BYTES_PER_ELEMENT,
+      size: 3 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -108,7 +115,11 @@ class Renderer {
     });
 
     const wavesBuffer = new BufferWriter(this.settings.waves * Wave.BYTE_SIZE);
-    const waves = Array.from(Array(this.settings.waves), () => Wave.random());
+    const waves = Array.from(Array(this.settings.waves), () =>
+      Wave.random({
+        speed: this.settings.speedRange,
+      })
+    );
 
     for (const wave of waves) {
       wave.writeToBuffer(wavesBuffer);
@@ -118,6 +129,16 @@ class Renderer {
       this.wavesBuffer,
       0,
       wavesBuffer.toFloat32Array()
+    );
+
+    this.device.queue.writeBuffer(
+      this.settingsBuffer,
+      0,
+      new Float32Array([
+        0,
+        random(this.settings.frequencyRange),
+        random(this.settings.amplitudeRange),
+      ])
     );
 
     this.depthTexture = this.createDepthTexture();
@@ -188,6 +209,7 @@ class Renderer {
       },
       primitive: {
         topology: this.settings.wireframe ? "line-strip" : "triangle-list",
+        cullMode: "front",
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -201,7 +223,7 @@ class Renderer {
 
   private createDepthTexture(): GPUTexture {
     return this.device.createTexture({
-      size: { width: this.canvas.width, height: this.canvas.height },
+      size: this.canvas,
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
@@ -224,7 +246,9 @@ class Renderer {
     this.device.queue.writeBuffer(
       this.settingsBuffer,
       0,
-      new Float32Array([time])
+      new Float32Array([time]),
+      0,
+      1
     );
 
     const commandEncoder = this.device.createCommandEncoder({
@@ -248,11 +272,9 @@ class Renderer {
       },
     });
 
-    renderPass.setViewport(0, 0, this.canvas.width, this.canvas.height, 0, 1);
-    renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setBindGroup(0, this.renderBindGroup);
     renderPass.setPipeline(this.renderPipeline);
-    renderPass.draw(mesh.verticeCount);
+    mesh.render(renderPass);
     renderPass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);

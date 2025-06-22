@@ -16,13 +16,15 @@ canvas.addEventListener("click", () => {
 
 const renderer = await Renderer.create(canvas, {
   wireframe: false,
+  waves: 32,
 });
 await renderer.initialise();
 
 const camera = new Camera({
-  position: new Vector3(0, 1, 5),
+  position: new Vector3(0, 0.5, 5),
 });
-const mesh = new Mesh(getSubdividedSquare(500, 10), "Square");
+const meshData = getSubdividedSquare(500, 10);
+const mesh = new Mesh(meshData.vertices, meshData.indices, "Square");
 const loop = new Loop();
 
 const loopCallback: Callback = (data: FrameData): void => {
@@ -35,41 +37,47 @@ const loopCallback: Callback = (data: FrameData): void => {
 loop.addCallback(loopCallback);
 loop.start();
 
-// TODO: INDEXED VERTICES
-function getSubdividedSquare(tiles: number, width: number): number[] {
+function getSubdividedSquare(
+  tiles: number,
+  width: number
+): { vertices: number[]; indices: number[] } {
   const tileWidth = width / tiles / 2;
   const centringAdjustment = 0.5 * (1 - 1 / tiles) * width;
-  // prettier-ignore
-  const baseVertices = [
-    tileWidth - centringAdjustment, 0, -tileWidth - centringAdjustment,
-    tileWidth - centringAdjustment, 0, tileWidth - centringAdjustment,
-    -tileWidth - centringAdjustment, 0, tileWidth - centringAdjustment,
-  
-    -tileWidth - centringAdjustment, 0, -tileWidth - centringAdjustment,
-    tileWidth - centringAdjustment, 0, -tileWidth - centringAdjustment,
-    -tileWidth - centringAdjustment, 0, tileWidth - centringAdjustment,
-  ]
-
+  const meshStart = -tileWidth - centringAdjustment;
   const newVertices: number[] = [];
+  const indices: number[] = [];
+
+  const vertexCount = (tiles + 1) ** 2;
+
+  for (let i = 0; i < vertexCount; i++) {
+    const row = Math.floor(i / (tiles + 1));
+    const column = i - (tiles + 1) * row;
+    newVertices.push(
+      meshStart + column * 2 * tileWidth,
+      0,
+      meshStart + row * 2 * tileWidth
+    );
+  }
 
   for (let x = 0; x < tiles; x++) {
-    for (let z = 0; z < tiles; z++) {
-      for (let i = 0; i < baseVertices.length; i++) {
-        const value = baseVertices[i];
-        switch (i % 3) {
-          case 0:
-            newVertices.push(value + x * tileWidth * 2);
-            break;
-          case 1:
-            newVertices.push(value);
-            break;
-          case 2:
-            newVertices.push(value + z * tileWidth * 2);
-            break;
-        }
-      }
+    for (let y = 0; y < tiles; y++) {
+      const currentRowOffset = y * (tiles + 1);
+      const nextRowOffset = (y + 1) * (tiles + 1);
+      indices.push(
+        currentRowOffset + x + 1,
+        nextRowOffset + x + 1,
+        nextRowOffset + x
+      );
+      indices.push(
+        currentRowOffset + x,
+        currentRowOffset + x + 1,
+        nextRowOffset + x
+      );
     }
   }
 
-  return newVertices;
+  return {
+    vertices: newVertices,
+    indices,
+  };
 }
