@@ -36,6 +36,7 @@ class Renderer {
 
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
+  private depthTexture!: GPUTexture;
 
   private readonly perspectiveViewMatrix: Matrix4Buffer;
   private settingsBuffer!: GPUBuffer;
@@ -72,6 +73,8 @@ class Renderer {
 
       this.canvas.width = width;
       this.canvas.height = height;
+
+      this.depthTexture = this.createDepthTexture();
     }).observe(this.canvas);
   }
 
@@ -116,6 +119,8 @@ class Renderer {
       0,
       wavesBuffer.toFloat32Array()
     );
+
+    this.depthTexture = this.createDepthTexture();
 
     const renderBindGroupLayout = this.device.createBindGroupLayout({
       label: "Render Bind Group Layout",
@@ -184,9 +189,22 @@ class Renderer {
       primitive: {
         topology: this.settings.wireframe ? "line-strip" : "triangle-list",
       },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus",
+      },
     });
 
     this.initialised = true;
+  }
+
+  private createDepthTexture(): GPUTexture {
+    return this.device.createTexture({
+      size: { width: this.canvas.width, height: this.canvas.height },
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
   }
 
   public render(camera: Camera, mesh: Mesh, time: number): void {
@@ -222,6 +240,12 @@ class Renderer {
           storeOp: "store",
         },
       ],
+      depthStencilAttachment: {
+        view: this.depthTexture.createView(),
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+        depthClearValue: 1,
+      },
     });
 
     renderPass.setViewport(0, 0, this.canvas.width, this.canvas.height, 0, 1);

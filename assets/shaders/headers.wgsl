@@ -4,6 +4,7 @@ struct Vertex {
 
 struct VertexOutput {
   @builtin(position) position: vec4f,
+  @location(0) normal: vec3f,
 }
 
 struct Settings {
@@ -15,6 +16,11 @@ struct Wave {
   amplitude: f32,
   @align(8) phaseConstant: f32,
   @size(12) direction: vec2f,
+}
+
+struct WaveFunctionOutput {
+  displacement: f32,
+  normal: vec3f,
 }
 
 @group(0) @binding(0) var <uniform> perspectiveViewMatrix: mat4x4<f32>;
