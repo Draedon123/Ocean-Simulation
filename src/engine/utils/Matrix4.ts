@@ -165,82 +165,82 @@ class Matrix4 {
   //   return a13 * b6 - a03 * b7 + a33 * b8 - a23 * b9;
   // }
 
-  // public preMultiply(a: Matrix4): this {
-  //   Matrix4.multiply(this, a, this);
+  public preMultiply(a: Matrix4): this {
+    Matrix4.multiply(a, this, this);
 
-  //   return this;
-  // }
+    return this;
+  }
 
-  // public postMultiply(a: Matrix4): this {
-  //   Matrix4.multiply(a, this, this);
+  public postMultiply(a: Matrix4): this {
+    Matrix4.multiply(this, a, this);
 
-  //   return this;
-  // }
+    return this;
+  }
 
-  // public static multiply(
-  //   a: Matrix4,
-  //   b: Matrix4,
-  //   out: Matrix4 = new Matrix4()
-  // ): Matrix4 {
-  //   const a00 = a.components[0];
-  //   const a01 = a.components[1];
-  //   const a02 = a.components[2];
-  //   const a03 = a.components[3];
-  //   const a10 = a.components[4];
-  //   const a11 = a.components[5];
-  //   const a12 = a.components[6];
-  //   const a13 = a.components[7];
-  //   const a20 = a.components[8];
-  //   const a21 = a.components[9];
-  //   const a22 = a.components[10];
-  //   const a23 = a.components[11];
-  //   const a30 = a.components[12];
-  //   const a31 = a.components[13];
-  //   const a32 = a.components[14];
-  //   const a33 = a.components[15];
+  public static multiply(
+    a: Matrix4,
+    b: Matrix4,
+    out: Matrix4 = new Matrix4()
+  ): Matrix4 {
+    const a00 = a.components[0];
+    const a01 = a.components[1];
+    const a02 = a.components[2];
+    const a03 = a.components[3];
+    const a10 = a.components[4];
+    const a11 = a.components[5];
+    const a12 = a.components[6];
+    const a13 = a.components[7];
+    const a20 = a.components[8];
+    const a21 = a.components[9];
+    const a22 = a.components[10];
+    const a23 = a.components[11];
+    const a30 = a.components[12];
+    const a31 = a.components[13];
+    const a32 = a.components[14];
+    const a33 = a.components[15];
 
-  //   let b0 = b.components[0];
-  //   let b1 = b.components[1];
-  //   let b2 = b.components[2];
-  //   let b3 = b.components[3];
+    let b0 = b.components[0];
+    let b1 = b.components[1];
+    let b2 = b.components[2];
+    let b3 = b.components[3];
 
-  //   out.components[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  //   out.components[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  //   out.components[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  //   out.components[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    out.components[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out.components[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out.components[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out.components[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-  //   b0 = b.components[4];
-  //   b1 = b.components[5];
-  //   b2 = b.components[6];
-  //   b3 = b.components[7];
+    b0 = b.components[4];
+    b1 = b.components[5];
+    b2 = b.components[6];
+    b3 = b.components[7];
 
-  //   out.components[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  //   out.components[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  //   out.components[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  //   out.components[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    out.components[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out.components[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out.components[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out.components[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-  //   b0 = b.components[8];
-  //   b1 = b.components[9];
-  //   b2 = b.components[10];
-  //   b3 = b.components[11];
+    b0 = b.components[8];
+    b1 = b.components[9];
+    b2 = b.components[10];
+    b3 = b.components[11];
 
-  //   out.components[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  //   out.components[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  //   out.components[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  //   out.components[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    out.components[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out.components[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out.components[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out.components[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-  //   b0 = b.components[12];
-  //   b1 = b.components[13];
-  //   b2 = b.components[14];
-  //   b3 = b.components[15];
+    b0 = b.components[12];
+    b1 = b.components[13];
+    b2 = b.components[14];
+    b3 = b.components[15];
 
-  //   out.components[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  //   out.components[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  //   out.components[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  //   out.components[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    out.components[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out.components[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out.components[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out.components[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-  //   return out;
-  // }
+    return out;
+  }
 
   public static perspective(
     fieldOfViewRadians: number,

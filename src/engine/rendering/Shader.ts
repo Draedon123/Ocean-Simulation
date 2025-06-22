@@ -28,6 +28,8 @@ class Shader {
 
   public initialise(device: GPUDevice): void {
     if (this.initialised) {
+      console.warn("Shader already initialised");
+
       return;
     }
 

@@ -33,6 +33,7 @@ class Matrix4Buffer extends Matrix4 {
   public writeBuffer(): void {
     if (!this.initialised) {
       console.error("Matrix4Buffer not initialised");
+      return;
     }
 
     this.device.queue.writeBuffer(this.buffer, 0, this.components);

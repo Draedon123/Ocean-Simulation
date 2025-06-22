@@ -34,12 +34,10 @@ class Renderer {
 
   private initialised: boolean;
 
-  private renderShaderModule!: Shader;
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
 
-  private readonly perspectiveMatrix: Matrix4Buffer;
-  private readonly viewMatrix: Matrix4Buffer;
+  private readonly perspectiveViewMatrix: Matrix4Buffer;
   private settingsBuffer!: GPUBuffer;
   private wavesBuffer!: GPUBuffer;
   private constructor(
@@ -63,11 +61,8 @@ class Renderer {
     );
     this.settings = settings;
 
-    this.perspectiveMatrix = new Matrix4Buffer("Perspective Matrix");
-    this.viewMatrix = new Matrix4Buffer("View Matrix");
-
-    this.perspectiveMatrix.initialise(device);
-    this.viewMatrix.initialise(device);
+    this.perspectiveViewMatrix = new Matrix4Buffer("Perspective Matrix");
+    this.perspectiveViewMatrix.initialise(device);
 
     new ResizeObserver((entries) => {
       const canvas = entries[0];
@@ -90,12 +85,12 @@ class Renderer {
       format: this.canvasFormat,
     });
 
-    this.renderShaderModule = await Shader.from(
-      "render",
+    const renderShaderModule = await Shader.from(
+      ["headers", "vertex", "fragment", "waveFunctions"],
       "Render Shader Module"
     );
 
-    this.renderShaderModule.initialise(this.device);
+    renderShaderModule.initialise(this.device);
 
     this.settingsBuffer = this.device.createBuffer({
       label: "Settings Buffer",
@@ -137,11 +132,6 @@ class Renderer {
         },
         {
           binding: 2,
-          buffer: {},
-          visibility: GPUShaderStage.VERTEX,
-        },
-        {
-          binding: 3,
           buffer: { type: "read-only-storage" },
           visibility: GPUShaderStage.VERTEX,
         },
@@ -155,23 +145,17 @@ class Renderer {
         {
           binding: 0,
           resource: {
-            buffer: this.perspectiveMatrix.buffer,
+            buffer: this.perspectiveViewMatrix.buffer,
           },
         },
         {
           binding: 1,
           resource: {
-            buffer: this.viewMatrix.buffer,
-          },
-        },
-        {
-          binding: 2,
-          resource: {
             buffer: this.settingsBuffer,
           },
         },
         {
-          binding: 3,
+          binding: 2,
           resource: {
             buffer: this.wavesBuffer,
           },
@@ -188,12 +172,12 @@ class Renderer {
       label: "Render Pipeline",
       layout: renderPipelineLayout,
       vertex: {
-        module: this.renderShaderModule.shaderModule,
+        module: renderShaderModule.shaderModule,
         entryPoint: "vertexMain",
         buffers: [vertexBufferLayout],
       },
       fragment: {
-        module: this.renderShaderModule.shaderModule,
+        module: renderShaderModule.shaderModule,
         entryPoint: "fragmentMain",
         targets: [{ format: this.canvasFormat }],
       },
@@ -215,9 +199,8 @@ class Renderer {
     mesh.initialise(this.device);
 
     camera.aspectRatio = this.canvas.width / this.canvas.height;
-    this.viewMatrix.copyFrom(camera.getViewMatrix()).writeBuffer();
-    this.perspectiveMatrix
-      .copyFrom(camera.getPerspectiveMatrix())
+    this.perspectiveViewMatrix
+      .copyFrom(camera.getPerspectiveViewMatrix())
       .writeBuffer();
 
     this.device.queue.writeBuffer(

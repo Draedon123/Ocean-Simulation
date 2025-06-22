@@ -93,6 +93,11 @@ class Camera implements CameraOptions {
     );
   }
 
+  // TODO: CACHE
+  public getPerspectiveViewMatrix(): Matrix4 {
+    return this.getPerspectiveMatrix().postMultiply(this.getViewMatrix());
+  }
+
   public checkKeyboardInputs(): void {
     if (this.keyboardManager.isKeyDown(this.keybinds.forwards)) {
       const forward = this.forward.clone();
