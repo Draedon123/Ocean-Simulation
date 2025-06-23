@@ -1,5 +1,6 @@
+import { resolveBasePath } from "@utils/resolveBasePath";
+
 class Shader {
-  public static BASE_PATH: string = `${import.meta.env.BASE_URL}/shaders`;
   private initialised: boolean;
   public shaderModule!: GPUShaderModule;
   constructor(
@@ -15,15 +16,13 @@ class Shader {
   ): Promise<Shader> {
     const urls = typeof url === "string" ? [url] : url;
     const promises = urls.map((url) =>
-      fetch(Shader.resolveBasePath(url)).then((response) => response.text())
+      fetch(resolveBasePath(`shaders/${url}.wgsl`)).then((response) =>
+        response.text()
+      )
     );
     const code = (await Promise.all(promises)).join("");
 
     return new Shader(code, label);
-  }
-
-  private static resolveBasePath(path: string): string {
-    return Shader.BASE_PATH === "" ? path : `${Shader.BASE_PATH}/${path}.wgsl`;
   }
 
   public initialise(device: GPUDevice): void {

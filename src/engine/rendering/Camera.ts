@@ -162,7 +162,7 @@ class Camera implements CameraOptions {
       const deltaY = -event.movementY * this.mouseSensitivity;
 
       this.yaw += deltaX;
-      this.pitch = clamp(-89, this.pitch + deltaY, 89);
+      this.pitch = clamp(this.pitch + deltaY, -89, 89);
 
       const yaw = degreesToRadians(this.yaw);
       const pitch = degreesToRadians(this.pitch);

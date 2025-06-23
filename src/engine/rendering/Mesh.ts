@@ -45,9 +45,19 @@ class Mesh {
       return;
     }
 
+    this.bind(renderPass);
+    renderPass.drawIndexed(this.indexCount);
+  }
+
+  public bind(renderPass: GPURenderPassEncoder): void {
+    if (!this.initialised) {
+      console.error(`Mesh ${this.label} not initialised`);
+
+      return;
+    }
+
     renderPass.setVertexBuffer(0, this.vertexBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, this.indexFormat);
-    renderPass.drawIndexed(this.indexCount);
   }
 
   public get verticeCount(): number {

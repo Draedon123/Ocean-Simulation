@@ -4,6 +4,8 @@ import { Shader } from "./Shader";
 import { Wave } from "../ocean/Wave";
 import { BufferWriter } from "@utils/BufferWriter";
 import { random } from "@utils/random";
+import { Skybox } from "./Skybox";
+import { Cubemap } from "./Cubemap";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -40,6 +42,8 @@ class Renderer {
 
   private initialised: boolean;
 
+  private skybox!: Skybox;
+
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
   private depthTexture!: GPUTexture;
@@ -47,6 +51,7 @@ class Renderer {
   private cameraBuffer!: GPUBuffer;
   private settingsBuffer!: GPUBuffer;
   private wavesBuffer!: GPUBuffer;
+
   private constructor(
     private readonly device: GPUDevice,
     public readonly canvas: HTMLCanvasElement,
@@ -90,6 +95,20 @@ class Renderer {
       device: this.device,
       format: this.canvasFormat,
     });
+
+    const cubemap = new Cubemap("Cubemap");
+    await cubemap.initialise(
+      this.device,
+      "skybox/px.png",
+      "skybox/nx.png",
+      "skybox/py.png",
+      "skybox/ny.png",
+      "skybox/pz.png",
+      "skybox/nz.png"
+    );
+
+    this.skybox = new Skybox(this.device, cubemap, "Skybox");
+    await this.skybox.initialise(this.canvasFormat);
 
     const renderShaderModule = await Shader.from(
       ["headers", "vertex", "fragment", "waveFunctions"],
@@ -275,6 +294,8 @@ class Renderer {
     renderPass.setBindGroup(0, this.renderBindGroup);
     renderPass.setPipeline(this.renderPipeline);
     mesh.render(renderPass);
+    this.skybox.render(renderPass, camera);
+
     renderPass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
