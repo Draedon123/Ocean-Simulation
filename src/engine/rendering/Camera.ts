@@ -1,4 +1,5 @@
 import { degreesToRadians } from "@utils/angles";
+import { BufferWriter } from "@utils/BufferWriter";
 import { clamp } from "@utils/clamp";
 import { KeyboardManager } from "@utils/KeyboardManager";
 import { Matrix4 } from "@utils/Matrix4";
@@ -27,6 +28,9 @@ type CameraOptions = {
 };
 
 class Camera implements CameraOptions {
+  public static readonly BYTE_SIZE: number =
+    32 * Float32Array.BYTES_PER_ELEMENT;
+
   public position: Vector3;
   public fieldOfView: number;
   public aspectRatio: number;
@@ -96,6 +100,17 @@ class Camera implements CameraOptions {
   // TODO: CACHE
   public getPerspectiveViewMatrix(): Matrix4 {
     return this.getPerspectiveMatrix().postMultiply(this.getViewMatrix());
+  }
+
+  public writeToBuffer(): Float32Array {
+    const bufferWriter = new BufferWriter(Camera.BYTE_SIZE);
+
+    bufferWriter.writeMat4x4f(this.getPerspectiveViewMatrix());
+    bufferWriter.writeVec3f32(this.position);
+    bufferWriter.pad(4);
+    bufferWriter.writeVec3f32(this.forward.normalise());
+
+    return bufferWriter.toFloat32Array();
   }
 
   public checkKeyboardInputs(): void {

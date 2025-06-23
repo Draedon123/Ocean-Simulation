@@ -1,4 +1,3 @@
-import { Matrix4Buffer } from "@utils/Matrix4Buffer";
 import { Camera } from "./Camera";
 import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
@@ -45,7 +44,7 @@ class Renderer {
   private renderPipeline!: GPURenderPipeline;
   private depthTexture!: GPUTexture;
 
-  private readonly perspectiveViewMatrix: Matrix4Buffer;
+  private cameraBuffer!: GPUBuffer;
   private settingsBuffer!: GPUBuffer;
   private wavesBuffer!: GPUBuffer;
   private constructor(
@@ -68,9 +67,6 @@ class Renderer {
       _settings
     );
     this.settings = settings;
-
-    this.perspectiveViewMatrix = new Matrix4Buffer("Perspective Matrix");
-    this.perspectiveViewMatrix.initialise(device);
 
     new ResizeObserver((entries) => {
       const canvas = entries[0];
@@ -101,6 +97,12 @@ class Renderer {
     );
 
     renderShaderModule.initialise(this.device);
+
+    this.cameraBuffer = this.device.createBuffer({
+      label: "Camera Buffer",
+      size: Camera.BYTE_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
 
     this.settingsBuffer = this.device.createBuffer({
       label: "Settings Buffer",
@@ -149,7 +151,7 @@ class Renderer {
         {
           binding: 0,
           buffer: {},
-          visibility: GPUShaderStage.VERTEX,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
         },
         {
           binding: 1,
@@ -171,7 +173,7 @@ class Renderer {
         {
           binding: 0,
           resource: {
-            buffer: this.perspectiveViewMatrix.buffer,
+            buffer: this.cameraBuffer,
           },
         },
         {
@@ -239,9 +241,7 @@ class Renderer {
     mesh.initialise(this.device);
 
     camera.aspectRatio = this.canvas.width / this.canvas.height;
-    this.perspectiveViewMatrix
-      .copyFrom(camera.getPerspectiveViewMatrix())
-      .writeBuffer();
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, camera.writeToBuffer());
 
     this.device.queue.writeBuffer(
       this.settingsBuffer,

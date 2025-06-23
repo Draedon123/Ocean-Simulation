@@ -1,3 +1,4 @@
+import { Matrix4 } from "./Matrix4";
 import { Vector2 } from "./Vector2";
 import { Vector3 } from "./Vector3";
 
@@ -39,6 +40,12 @@ class BufferWriter {
     this.writeFloat32(vec3f32.x);
     this.writeFloat32(vec3f32.y);
     this.writeFloat32(vec3f32.z);
+  }
+
+  public writeMat4x4f(mat4x4f: Matrix4): void {
+    for (let i = 0; i < 16; i++) {
+      this.writeFloat32(mat4x4f.components[i]);
+    }
   }
 
   public writeBooleanAsUint32(boolean: boolean): void {

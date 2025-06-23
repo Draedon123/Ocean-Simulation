@@ -6,7 +6,8 @@ fn vertexMain(vertex: Vertex) -> VertexOutput {
   let waveFunctionOutput = waveFunction(settings.time, vertexPosition.xz);
   vertexPosition.y += waveFunctionOutput.displacement;
 
-  output.position = perspectiveViewMatrix * vec4f(vertexPosition, 1.0);
+  output.fragmentPosition = vertexPosition;
+  output.position = camera.perspectiveViewMatrix * vec4f(vertexPosition, 1.0);
   output.normal = waveFunctionOutput.normal;
 
   return output;
