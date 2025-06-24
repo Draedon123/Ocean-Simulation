@@ -1,10 +1,8 @@
 import { Camera } from "./Camera";
-import { Mesh } from "./Mesh";
 import { Shader } from "./Shader";
 import { Wave } from "../ocean/Wave";
 import { BufferWriter } from "@utils/BufferWriter";
 import { random } from "@utils/random";
-import { Skybox } from "./Skybox";
 import { Cubemap } from "./Cubemap";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
@@ -36,13 +34,11 @@ class Renderer {
   };
 
   public readonly settings: RendererSettings;
+  public readonly canvasFormat: GPUTextureFormat;
 
   private readonly ctx: GPUCanvasContext;
-  private readonly canvasFormat: GPUTextureFormat;
 
   private initialised: boolean;
-
-  private skybox!: Skybox;
 
   private renderBindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
@@ -53,7 +49,7 @@ class Renderer {
   private wavesBuffer!: GPUBuffer;
 
   private constructor(
-    private readonly device: GPUDevice,
+    public readonly device: GPUDevice,
     public readonly canvas: HTMLCanvasElement,
     _settings: Partial<RendererSettings>
   ) {
@@ -106,9 +102,6 @@ class Renderer {
       "skybox/pz.png",
       "skybox/nz.png"
     );
-
-    this.skybox = new Skybox(this.device, cubemap, "Skybox");
-    await this.skybox.initialise(this.canvasFormat);
 
     const renderShaderModule = await Shader.from(
       ["headers", "vertex", "fragment", "waveFunctions"],
@@ -250,14 +243,12 @@ class Renderer {
     });
   }
 
-  public render(camera: Camera, mesh: Mesh, time: number): void {
+  public render(camera: Camera, renderables: Renderable[], time: number): void {
     if (!this.initialised) {
       console.error("Renderer not initialised");
 
       return;
     }
-
-    mesh.initialise(this.device);
 
     camera.aspectRatio = this.canvas.width / this.canvas.height;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, camera.writeToBuffer());
@@ -293,8 +284,14 @@ class Renderer {
 
     renderPass.setBindGroup(0, this.renderBindGroup);
     renderPass.setPipeline(this.renderPipeline);
-    mesh.render(renderPass);
-    this.skybox.render(renderPass, camera);
+
+    for (const renderable of renderables) {
+      try {
+        renderable.render(renderPass, camera);
+      } catch (error) {
+        console.error("Error while trying to render object", error);
+      }
+    }
 
     renderPass.end();
 
