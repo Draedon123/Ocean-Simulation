@@ -29,8 +29,8 @@ class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
     waves: 32,
-    frequencyRange: [3, 6],
-    amplitudeRange: [0.2, 0.4],
+    frequencyRange: [2, 3.5],
+    amplitudeRange: [0.1, 0.25],
     speedRange: [0.4, 0.6],
   };
 
@@ -252,7 +252,7 @@ class Renderer {
         targets: [{ format: this.canvasFormat }],
       },
       primitive: {
-        topology: this.settings.wireframe ? "line-strip" : "triangle-list",
+        topology: this.settings.wireframe ? "line-list" : "triangle-list",
         cullMode: "front",
       },
       depthStencil: {

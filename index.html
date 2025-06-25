@@ -6,8 +6,24 @@
     <title>Ocean Simulation</title>
   </head>
   <body>
+    <span class="loading">Loading...</span>
     <canvas></canvas>
     <style>
+      .loading {
+        width: 100vw;
+        height: 100vh;
+
+        font-size: xx-large;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+
+        z-index: 1;
+        color: white;
+      }
+
       canvas {
         width: 100vw;
         height: 100vh;

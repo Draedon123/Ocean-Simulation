@@ -5,10 +5,15 @@ import { Callback, FrameData, Loop } from "@utils/Loop";
 import { subdivideSquare } from "@utils/subdivideSquare";
 import { Vector3 } from "@utils/Vector3";
 
-main().catch((error) => {
-  alert(error);
-  throw error;
-});
+const loading = document.querySelector(".loading");
+main()
+  .then(() => {
+    loading?.remove();
+  })
+  .catch((error) => {
+    alert(error);
+    throw error;
+  });
 
 async function main(): Promise<void> {
   const canvas = document.querySelector("canvas");
@@ -29,8 +34,9 @@ async function main(): Promise<void> {
 
   const camera = new Camera({
     position: new Vector3(0, 0.5, 5),
+    movementSpeed: 0.1,
   });
-  const meshData = subdivideSquare(500, 10);
+  const meshData = subdivideSquare(500, 100);
   const oceanMesh = new Mesh(meshData.vertices, meshData.indices, "Ocean Mesh");
 
   const loop = new Loop();
