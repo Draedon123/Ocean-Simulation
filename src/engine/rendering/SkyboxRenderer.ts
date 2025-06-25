@@ -8,12 +8,13 @@ class SkyboxRenderer {
 
   private readonly inversePespectiveViewMatrix: Matrix4Buffer;
   private readonly bindGroups: GPUBindGroup[] = [];
-  private readonly skyboxes: Cubemap[];
   private activeSkybox: number;
   private device!: GPUDevice;
-  private sampler!: GPUSampler;
   private renderBindGroupLayout!: GPUBindGroupLayout;
   private renderPipeline!: GPURenderPipeline;
+
+  public readonly skyboxes: Cubemap[];
+  public sampler!: GPUSampler;
   constructor(
     public readonly label: string = "",
     ...skyboxes: Cubemap[]

@@ -4,6 +4,7 @@ import { Wave } from "../ocean/Wave";
 import { BufferWriter } from "@utils/BufferWriter";
 import { random } from "@utils/random";
 import { Cubemap } from "./Cubemap";
+import { SkyboxRenderer } from "./SkyboxRenderer";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -35,6 +36,7 @@ class Renderer {
 
   public readonly settings: RendererSettings;
   public readonly canvasFormat: GPUTextureFormat;
+  public readonly skyboxRenderer: SkyboxRenderer;
 
   private readonly ctx: GPUCanvasContext;
 
@@ -61,6 +63,7 @@ class Renderer {
 
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.skyboxRenderer = new SkyboxRenderer("Renderer Skybox");
     this.initialised = false;
 
     const settings = Object.assign(
@@ -102,6 +105,11 @@ class Renderer {
       "skybox/pz.png",
       "skybox/nz.png"
     );
+
+    await this.skyboxRenderer.initialise(this.device, this.canvasFormat);
+    this.skyboxRenderer.addSkybox(cubemap);
+
+    this.skyboxRenderer.setActiveSkybox(cubemap);
 
     const renderShaderModule = await Shader.from(
       ["headers", "vertex", "fragment", "waveFunctions"],
@@ -175,6 +183,18 @@ class Renderer {
           buffer: { type: "read-only-storage" },
           visibility: GPUShaderStage.VERTEX,
         },
+        {
+          binding: 3,
+          sampler: {},
+          visibility: GPUShaderStage.FRAGMENT,
+        },
+        {
+          binding: 4,
+          texture: {
+            viewDimension: "cube",
+          },
+          visibility: GPUShaderStage.FRAGMENT,
+        },
       ],
     });
 
@@ -199,6 +219,16 @@ class Renderer {
           resource: {
             buffer: this.wavesBuffer,
           },
+        },
+        {
+          binding: 3,
+          resource: this.skyboxRenderer.sampler,
+        },
+        {
+          binding: 4,
+          resource: this.skyboxRenderer.skyboxes[0].texture.createView({
+            dimension: "cube",
+          }),
         },
       ],
     });
@@ -292,6 +322,8 @@ class Renderer {
         console.error("Error while trying to render object", error);
       }
     }
+
+    this.skyboxRenderer.render(renderPass, camera);
 
     renderPass.end();
 
