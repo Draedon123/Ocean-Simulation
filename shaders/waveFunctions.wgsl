@@ -4,8 +4,8 @@ fn waveFunction(time: f32, position: vec2f) -> WaveFunctionOutput {
   var numberOfWaves: u32 = arrayLength(&waves);
 
   // https://thebookofshaders.com/13/
-  let lacunarity: f32 = 1.2;
-  let gain: f32 = 0.55;
+  let lacunarity: f32 = 1.15;
+  let gain: f32 = 0.75;
 
   var frequency: f32 = settings.initialFrequency;
   var amplitude: f32 = settings.initialAmplitude;
