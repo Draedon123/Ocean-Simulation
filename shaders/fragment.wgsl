@@ -12,7 +12,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 
   let diffuseColour: vec3f = diffuse * WAVE_COLOUR;
   let specularColour: vec3f = specular * SPECULAR_COLOUR;
-  let skyboxColour: vec3f = fresnel * textureSample(texture, textureSampler, input.normal).xyz;
+  let skyboxColour: vec3f = fresnel * textureSample(skybox, textureSampler, input.normal).xyz;
 
   return vec4f(diffuseColour + specularColour + skyboxColour, 1.0);
 }
