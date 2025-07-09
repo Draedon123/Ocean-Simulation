@@ -4,7 +4,7 @@ class Shader {
   protected initialised: boolean;
   public shaderModule!: GPUShaderModule;
   constructor(
-    private readonly code: string,
+    public code: string,
     public readonly label?: string
   ) {
     this.initialised = false;

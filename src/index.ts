@@ -32,8 +32,13 @@ async function main(): Promise<void> {
     canvas.requestPointerLock();
   });
 
+  const oceanSize: number = 50;
+  const textureSize: number = 512;
   const renderer = await Renderer.create(canvas, {
     wireframe: false,
+    meshSize: oceanSize,
+    domainSize: 2000,
+    textureSize,
   });
   await renderer.initialise();
 
@@ -41,7 +46,7 @@ async function main(): Promise<void> {
     position: new Vector3(0, 0.5, 5),
     movementSpeed: 0.1,
   });
-  const meshData = subdivideSquare(511, 50);
+  const meshData = subdivideSquare(textureSize - 1, oceanSize);
   const oceanMesh = new Mesh(meshData.vertices, meshData.indices, "Ocean Mesh");
 
   const loop = new Loop();

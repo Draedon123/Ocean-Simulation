@@ -15,6 +15,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   let skyboxColour: vec3f = fresnel * textureSample(skybox, textureSampler, input.normal).xyz;
 
   return vec4f(diffuseColour + specularColour + skyboxColour, 1.0);
+  // return vec4f(input.normal, 1.0);
 }
 
 fn getDiffuse(normal: vec3f, lightDirection: vec3f) -> f32 {

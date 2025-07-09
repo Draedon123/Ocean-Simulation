@@ -44,7 +44,7 @@ class HeightAmplitudes {
           binding: 1,
           storageTexture: {
             access: "read-only",
-            format: "rgba32float",
+            format: "rg32float",
           },
           visibility: GPUShaderStage.COMPUTE,
         },
@@ -105,6 +105,10 @@ class HeightAmplitudes {
       0,
       new Float32Array([time, domainSize, this.textureSize])
     );
+  }
+
+  public get spectrumTexture(): GPUTexture {
+    return this.spectrum.spectrumTexture;
   }
 
   public static async create(

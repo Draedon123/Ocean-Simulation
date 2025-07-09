@@ -27,7 +27,7 @@ class Spectrum {
 
     this.spectrumTexture = device.createTexture({
       label: "Spectrum Texture",
-      format: "rgba32float",
+      format: "rg32float",
       size: [textureSize, textureSize],
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
     });
@@ -44,7 +44,7 @@ class Spectrum {
           binding: 1,
           storageTexture: {
             access: "write-only",
-            format: "rgba32float",
+            format: "rg32float",
           },
           visibility: GPUShaderStage.COMPUTE,
         },

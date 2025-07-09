@@ -2,7 +2,7 @@ import { Camera } from "./Camera";
 import { Shader } from "./Shader";
 import { Cubemap } from "./Cubemap";
 import { SkyboxRenderer } from "./SkyboxRenderer";
-import { WaveHeightMap } from "../ocean/WaveHeightMap";
+import { Ocean } from "../ocean/Ocean";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -17,11 +17,17 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 
 type RendererSettings = {
   wireframe: boolean;
+  domainSize: number;
+  textureSize: number;
+  meshSize: number;
 };
 
 class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
+    domainSize: 2000,
+    textureSize: 512,
+    meshSize: 50,
   };
 
   public readonly settings: RendererSettings;
@@ -39,7 +45,7 @@ class Renderer {
   private cameraBuffer!: GPUBuffer;
   private renderSettingsBuffer!: GPUBuffer;
 
-  private waveHeightMap!: WaveHeightMap;
+  private ocean!: Ocean;
 
   private constructor(
     public readonly device: GPUDevice,
@@ -84,7 +90,11 @@ class Renderer {
       return;
     }
 
-    this.waveHeightMap = await WaveHeightMap.create(this.device, 2000, 512);
+    this.ocean = await Ocean.create(
+      this.device,
+      this.settings.domainSize,
+      this.settings.textureSize
+    );
 
     await this.initialiseRendering();
   }
@@ -112,7 +122,7 @@ class Renderer {
     this.skyboxRenderer.setActiveSkybox(cubemap);
 
     const renderShaderModule = await Shader.from(
-      ["headers", "vertex", "fragment", "complexNumber", "random"],
+      ["vertex", "fragment"],
       "Render Shader Module"
     );
 
@@ -133,7 +143,12 @@ class Renderer {
     this.device.queue.writeBuffer(
       this.renderSettingsBuffer,
       0,
-      new Float32Array([0, 50, 256, 2000])
+      new Float32Array([
+        0,
+        this.settings.meshSize,
+        this.settings.textureSize,
+        this.settings.domainSize,
+      ])
     );
 
     this.depthTexture = this.createDepthTexture();
@@ -166,7 +181,15 @@ class Renderer {
         {
           binding: 4,
           storageTexture: {
-            format: "rgba32float",
+            format: "r32float",
+            access: "read-only",
+          },
+          visibility: GPUShaderStage.VERTEX,
+        },
+        {
+          binding: 5,
+          storageTexture: {
+            format: "rg32float",
             access: "read-only",
           },
           visibility: GPUShaderStage.VERTEX,
@@ -202,7 +225,11 @@ class Renderer {
         },
         {
           binding: 4,
-          resource: this.waveHeightMap.heightMap.createView(),
+          resource: this.ocean.heightMap.createView(),
+        },
+        {
+          binding: 5,
+          resource: this.ocean.slopeVector.createView(),
         },
       ],
     });
@@ -254,7 +281,7 @@ class Renderer {
       return;
     }
 
-    this.waveHeightMap.create(time);
+    this.ocean.create(time);
     camera.aspectRatio = this.canvas.width / this.canvas.height;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, camera.writeToBuffer());
 

@@ -7,7 +7,7 @@ struct Settings {
 }
 
 @group(0) @binding(0) var <uniform> settings: Settings;
-@group(0) @binding(1) var spectrumTexture: texture_storage_2d<rgba32float, read>;
+@group(0) @binding(1) var spectrumTexture: texture_storage_2d<rg32float, read>;
 @group(0) @binding(2) var heightAmplitudesTexture: texture_storage_2d<rg32float, write>;
 
 @compute
@@ -27,10 +27,10 @@ const PI: f32 = 3.141592653589793;
 const GRAVITY: f32 = 9.81;
 
 fn heightAmplitude(pixel: vec2u) -> vec2f {
-  let data: vec4f = textureLoad(spectrumTexture, pixel);
-
-  let h0: vec2f = data.rg;
-  let h0_conjugate: vec2f = data.ba;
+  let h0: vec2f = textureLoad(spectrumTexture, pixel).rg;
+  let h0_conjugate: vec2f = textureLoad(spectrumTexture, u32(settings.samples) - pixel).rg *
+    // conjugate
+    vec2f(1.0, -1.0);
 
   let k: vec2f = 2 * PI * (vec2f(pixel) - settings.samples / 2) / settings.domainSize;
   let kLength: f32 = length(k);

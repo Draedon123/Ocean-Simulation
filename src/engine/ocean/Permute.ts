@@ -6,15 +6,19 @@ class Permute {
   private readonly bindGroup_1: GPUBindGroup;
   private readonly bindGroup_2: GPUBindGroup;
   private readonly pipeline: GPUComputePipeline;
-  public readonly heightMap: GPUTexture;
+  public readonly permuted: GPUTexture;
   private constructor(
     private readonly device: GPUDevice,
     shader: Shader,
     private readonly textureSize: number,
-    private readonly ifft: IFFT
+    private readonly ifft: IFFT,
+    dimensions: 1 | 2,
+    label: string
   ) {
     shader.initialise(device);
 
+    const textureFormat: GPUTextureFormat =
+      dimensions === 1 ? "r32float" : "rg32float";
     const settingsBuffer = device.createBuffer({
       label: "Permute Settings Buffer",
       size: 1 * Float32Array.BYTES_PER_ELEMENT,
@@ -27,10 +31,10 @@ class Permute {
       new Float32Array([textureSize])
     );
 
-    this.heightMap = device.createTexture({
-      label: "Wave Height Map",
+    this.permuted = device.createTexture({
+      label,
       size: [textureSize, textureSize],
-      format: "rgba32float",
+      format: textureFormat,
       usage: GPUTextureUsage.STORAGE_BINDING,
     });
 
@@ -54,7 +58,7 @@ class Permute {
           binding: 2,
           storageTexture: {
             access: "write-only",
-            format: "rgba32float",
+            format: textureFormat,
           },
           visibility: GPUShaderStage.COMPUTE,
         },
@@ -75,7 +79,7 @@ class Permute {
         },
         {
           binding: 2,
-          resource: this.heightMap.createView(),
+          resource: this.permuted.createView(),
         },
       ],
     });
@@ -94,7 +98,7 @@ class Permute {
         },
         {
           binding: 2,
-          resource: this.heightMap.createView(),
+          resource: this.permuted.createView(),
         },
       ],
     });
@@ -114,15 +118,14 @@ class Permute {
     });
   }
 
-  public createHeightMap(): void {
-    this.ifft.call();
-
+  public call(): void {
     const bindGroup =
       this.ifft.pingPong === 0 ? this.bindGroup_1 : this.bindGroup_2;
+
     callCompute(
       bindGroup,
       this.pipeline,
-      [this.textureSize, this.textureSize, 1],
+      [this.textureSize / 8, this.textureSize / 8, 1],
       this.device
     );
   }
@@ -130,11 +133,25 @@ class Permute {
   public static async create(
     device: GPUDevice,
     textureSize: number,
-    ifft: IFFT
+    ifft: IFFT,
+    dimensions: 1 | 2,
+    label: string
   ): Promise<Permute> {
     const shader = await Shader.from("permute", "Permute Shader Module");
 
-    return new Permute(device, shader, textureSize, ifft);
+    const textureFormat = dimensions === 1 ? "r" : "rg";
+    const dataType = dimensions === 1 ? "f32" : "vec2f";
+    const transform =
+      dimensions === 1
+        ? "vec4f(transformed, 0.0, 0.0, 0.0)"
+        : "vec4f(transformed, 0.0, 0.0)";
+
+    shader.code = shader.code
+      .replaceAll("__FORMAT__", textureFormat)
+      .replaceAll("__DATA_TYPE__", dataType)
+      .replaceAll("__TRANSFORM__", transform);
+
+    return new Permute(device, shader, textureSize, ifft, dimensions, label);
   }
 }
 
