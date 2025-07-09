@@ -1,20 +1,46 @@
+struct Vertex {
+  @location(0) position: vec3f,
+}
+
+struct VertexOutput {
+  @builtin(position) position: vec4f,
+  @location(0) fragmentPosition: vec3f,
+  @location(1) normal: vec3f,
+}
+
+struct Settings {
+  time: f32,
+  meshSize: f32,
+  heightMapSize: f32,
+  domainSize: f32,
+}
+
+struct Camera {
+  perspectiveViewMatrix: mat4x4f,
+  @align(16) position: vec3f,
+  @align(16) direction: vec3f,
+}
+
+@group(0) @binding(0) var <uniform> camera: Camera;
+@group(0) @binding(1) var <uniform> settings: Settings;
+@group(0) @binding(2) var textureSampler: sampler;
+@group(0) @binding(3) var skybox: texture_cube<f32>;
+@group(0) @binding(4) var heightMap: texture_storage_2d<r32float, read>;
+@group(0) @binding(5) var slopeVector: texture_storage_2d<rg32float, read>;
+
 @vertex
 fn vertexMain(vertex: Vertex) -> VertexOutput {
   var output: VertexOutput;
   var vertexPosition: vec3f = vertex.position;
 
-  let samplePoint: vec2f = vertexPosition.xz * settings.heightMapSize / settings.meshSize + settings.heightMapSize / 2;
-  let delta: vec2f = sign(vec2f(samplePoint - settings.heightMapSize / 2));
-  let dy: f32 = textureLoad(heightMap, vec2u(samplePoint)).x;
-  let f_1: f32 = textureLoad(heightMap, vec2u(samplePoint + delta)).x;
-  let f_2: f32 = textureLoad(heightMap, vec2u(samplePoint - delta)).x;
-  let derivative: f32 = (f_1 - f_2) / 2;
-  let normal: vec3f = normalize(cross(
-    vec3f(0.0, derivative, 1.0),
-    vec3f(1.0, derivative, 0.0),
-  ));
+  let samplePoint: vec2u = vec2u(vertexPosition.xz * settings.heightMapSize / settings.meshSize + settings.heightMapSize / 2);
+  let dy: f32 = textureLoad(heightMap, samplePoint).x;
+  // ??? * 20? idk, the slopes were too small so...
+  // TODO: FIX
+  let slopeData: vec2f = textureLoad(slopeVector, samplePoint).rg * 20;
+  let normal: vec3f = normalize(vec3f(-slopeData.x, 1, -slopeData.y));
 
-  vertexPosition.y += 5 * dy;
+  vertexPosition.y += dy;
 
   output.fragmentPosition = vertexPosition;
   output.position = camera.perspectiveViewMatrix * vec4f(vertexPosition, 1.0);
