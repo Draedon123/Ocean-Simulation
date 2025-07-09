@@ -1,7 +1,7 @@
 import { resolveBasePath } from "@utils/resolveBasePath";
 
 class Shader {
-  private initialised: boolean;
+  protected initialised: boolean;
   public shaderModule!: GPUShaderModule;
   constructor(
     private readonly code: string,
@@ -10,17 +10,22 @@ class Shader {
     this.initialised = false;
   }
 
-  public static async from(
-    url: string[] | string,
-    label?: string
-  ): Promise<Shader> {
-    const urls = typeof url === "string" ? [url] : url;
+  protected static async joinURLContents(urls: string[]): Promise<string> {
     const promises = urls.map((url) =>
       fetch(resolveBasePath(`shaders/${url}.wgsl`)).then((response) =>
         response.text()
       )
     );
-    const code = (await Promise.all(promises)).join("");
+
+    return (await Promise.all(promises)).join("");
+  }
+
+  public static async from(
+    url: string[] | string,
+    label?: string
+  ): Promise<Shader> {
+    const urls = typeof url === "string" ? [url] : url;
+    const code = await Shader.joinURLContents(urls);
 
     return new Shader(code, label);
   }

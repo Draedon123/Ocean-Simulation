@@ -2,7 +2,7 @@ function subdivideSquare(
   tiles: number,
   width: number
 ): { vertices: number[]; indices: number[] } {
-  const tileWidth = width / tiles / 2;
+  const tileWidth = width / tiles;
   const centringAdjustment = 0.5 * (1 - 1 / tiles) * width;
   const meshStart = -tileWidth - centringAdjustment;
   const newVertices: number[] = [];
@@ -14,9 +14,9 @@ function subdivideSquare(
     const row = Math.floor(i / (tiles + 1));
     const column = i - (tiles + 1) * row;
     newVertices.push(
-      meshStart + column * 2 * tileWidth,
+      meshStart + column * tileWidth,
       0,
-      meshStart + row * 2 * tileWidth
+      meshStart + row * tileWidth
     );
   }
 

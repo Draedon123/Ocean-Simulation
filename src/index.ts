@@ -5,12 +5,18 @@ import { Callback, FrameData, Loop } from "@utils/Loop";
 import { subdivideSquare } from "@utils/subdivideSquare";
 import { Vector3 } from "@utils/Vector3";
 
-const loading = document.querySelector(".loading");
+const loading = document.querySelector(".loading") as HTMLElement;
 main()
   .then(() => {
-    loading?.remove();
+    loading.remove();
   })
   .catch((error) => {
+    loading.textContent =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : JSON.stringify(error);
     alert(error);
     throw error;
   });
@@ -28,7 +34,6 @@ async function main(): Promise<void> {
 
   const renderer = await Renderer.create(canvas, {
     wireframe: false,
-    waves: 32,
   });
   await renderer.initialise();
 
@@ -36,14 +41,14 @@ async function main(): Promise<void> {
     position: new Vector3(0, 0.5, 5),
     movementSpeed: 0.1,
   });
-  const meshData = subdivideSquare(500, 100);
+  const meshData = subdivideSquare(511, 50);
   const oceanMesh = new Mesh(meshData.vertices, meshData.indices, "Ocean Mesh");
 
   const loop = new Loop();
 
   oceanMesh.initialise(renderer.device);
 
-  const loopCallback: Callback = async (data: FrameData): Promise<void> => {
+  const loopCallback: Callback = (data: FrameData): void => {
     const totalTimeSeconds = data.totalTimeMS / 1000;
 
     camera.checkKeyboardInputs();

@@ -10,8 +10,9 @@ struct VertexOutput {
 
 struct Settings {
   time: f32,
-  initialFrequency: f32,
-  initialAmplitude: f32,
+  meshSize: f32,
+  heightMapSize: f32,
+  domainSize: f32,
 }
 
 struct Camera {
@@ -20,18 +21,8 @@ struct Camera {
   @align(16) direction: vec3f,
 }
 
-struct Wave {
-  direction: vec2f,
-  speed: f32,
-}
-
-struct WaveFunctionOutput {
-  displacement: f32,
-  normal: vec3f,
-}
-
 @group(0) @binding(0) var <uniform> camera: Camera;
 @group(0) @binding(1) var <uniform> settings: Settings;
-@group(0) @binding(2) var <storage, read> waves: array<Wave>;
-@group(0) @binding(3) var textureSampler: sampler;
-@group(0) @binding(4) var texture: texture_cube<f32>;
+@group(0) @binding(2) var textureSampler: sampler;
+@group(0) @binding(3) var skybox: texture_cube<f32>;
+@group(0) @binding(4) var heightMap: texture_storage_2d<rgba32float, read>;

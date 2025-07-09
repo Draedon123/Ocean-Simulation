@@ -1,10 +1,8 @@
 import { Camera } from "./Camera";
 import { Shader } from "./Shader";
-import { Wave } from "../ocean/Wave";
-import { BufferWriter } from "@utils/BufferWriter";
-import { random } from "@utils/random";
 import { Cubemap } from "./Cubemap";
 import { SkyboxRenderer } from "./SkyboxRenderer";
+import { WaveHeightMap } from "../ocean/WaveHeightMap";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -19,19 +17,11 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 
 type RendererSettings = {
   wireframe: boolean;
-  waves: number;
-  frequencyRange: [number, number];
-  amplitudeRange: [number, number];
-  speedRange: [number, number];
 };
 
 class Renderer {
   private static readonly DEFAULT_SETTINGS: RendererSettings = {
     wireframe: false,
-    waves: 32,
-    frequencyRange: [2, 3.5],
-    amplitudeRange: [0.1, 0.25],
-    speedRange: [0.4, 0.6],
   };
 
   public readonly settings: RendererSettings;
@@ -47,8 +37,9 @@ class Renderer {
   private depthTexture!: GPUTexture;
 
   private cameraBuffer!: GPUBuffer;
-  private settingsBuffer!: GPUBuffer;
-  private wavesBuffer!: GPUBuffer;
+  private renderSettingsBuffer!: GPUBuffer;
+
+  private waveHeightMap!: WaveHeightMap;
 
   private constructor(
     public readonly device: GPUDevice,
@@ -81,7 +72,10 @@ class Renderer {
       this.canvas.width = width;
       this.canvas.height = height;
 
-      this.depthTexture = this.createDepthTexture();
+      if (this.initialised) {
+        this.depthTexture?.destroy();
+        this.depthTexture = this.createDepthTexture();
+      }
     }).observe(this.canvas);
   }
 
@@ -90,6 +84,12 @@ class Renderer {
       return;
     }
 
+    this.waveHeightMap = await WaveHeightMap.create(this.device, 2000, 512);
+
+    await this.initialiseRendering();
+  }
+
+  private async initialiseRendering(): Promise<void> {
     this.ctx.configure({
       device: this.device,
       format: this.canvasFormat,
@@ -112,7 +112,7 @@ class Renderer {
     this.skyboxRenderer.setActiveSkybox(cubemap);
 
     const renderShaderModule = await Shader.from(
-      ["headers", "vertex", "fragment", "waveFunctions"],
+      ["headers", "vertex", "fragment", "complexNumber", "random"],
       "Render Shader Module"
     );
 
@@ -124,43 +124,16 @@ class Renderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.settingsBuffer = this.device.createBuffer({
+    this.renderSettingsBuffer = this.device.createBuffer({
       label: "Settings Buffer",
-      size: 3 * Float32Array.BYTES_PER_ELEMENT,
+      size: 6 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.wavesBuffer = this.device.createBuffer({
-      label: "Waves Buffer",
-      size: this.settings.waves * Wave.BYTE_SIZE,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const wavesBuffer = new BufferWriter(this.settings.waves * Wave.BYTE_SIZE);
-    const waves = Array.from(Array(this.settings.waves), () =>
-      Wave.random({
-        speed: this.settings.speedRange,
-      })
-    );
-
-    for (const wave of waves) {
-      wave.writeToBuffer(wavesBuffer);
-    }
-
     this.device.queue.writeBuffer(
-      this.wavesBuffer,
+      this.renderSettingsBuffer,
       0,
-      wavesBuffer.toFloat32Array()
-    );
-
-    this.device.queue.writeBuffer(
-      this.settingsBuffer,
-      0,
-      new Float32Array([
-        0,
-        random(this.settings.frequencyRange),
-        random(this.settings.amplitudeRange),
-      ])
+      new Float32Array([0, 50, 256, 2000])
     );
 
     this.depthTexture = this.createDepthTexture();
@@ -180,20 +153,23 @@ class Renderer {
         },
         {
           binding: 2,
-          buffer: { type: "read-only-storage" },
-          visibility: GPUShaderStage.VERTEX,
-        },
-        {
-          binding: 3,
           sampler: {},
           visibility: GPUShaderStage.FRAGMENT,
         },
         {
-          binding: 4,
+          binding: 3,
           texture: {
             viewDimension: "cube",
           },
           visibility: GPUShaderStage.FRAGMENT,
+        },
+        {
+          binding: 4,
+          storageTexture: {
+            format: "rgba32float",
+            access: "read-only",
+          },
+          visibility: GPUShaderStage.VERTEX,
         },
       ],
     });
@@ -211,24 +187,22 @@ class Renderer {
         {
           binding: 1,
           resource: {
-            buffer: this.settingsBuffer,
+            buffer: this.renderSettingsBuffer,
           },
         },
         {
           binding: 2,
-          resource: {
-            buffer: this.wavesBuffer,
-          },
-        },
-        {
-          binding: 3,
           resource: this.skyboxRenderer.sampler,
         },
         {
-          binding: 4,
+          binding: 3,
           resource: this.skyboxRenderer.skyboxes[0].texture.createView({
             dimension: "cube",
           }),
+        },
+        {
+          binding: 4,
+          resource: this.waveHeightMap.heightMap.createView(),
         },
       ],
     });
@@ -280,15 +254,14 @@ class Renderer {
       return;
     }
 
+    this.waveHeightMap.create(time);
     camera.aspectRatio = this.canvas.width / this.canvas.height;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, camera.writeToBuffer());
 
     this.device.queue.writeBuffer(
-      this.settingsBuffer,
+      this.renderSettingsBuffer,
       0,
-      new Float32Array([time]),
-      0,
-      1
+      new Float32Array([time])
     );
 
     const commandEncoder = this.device.createCommandEncoder({
