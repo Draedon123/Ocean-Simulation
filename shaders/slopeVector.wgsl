@@ -1,6 +1,5 @@
 struct Settings {
   domainSize: f32,
-  samples: f32,
 }
 
 @group(0) @binding(0) var <uniform> settings: Settings;
@@ -12,7 +11,8 @@ const PI: f32 = 3.141592653589793;
 @compute
 @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3u) {
-  let k: vec2f = 2 * PI * (vec2f(id.xy) - settings.samples / 2) / settings.domainSize;
+  let samples: f32 = f32(textureDimensions(heightAmplitudes).x);
+  let k: vec2f = 2 * PI * (vec2f(id.xy) - samples / 2) / settings.domainSize;
   let hTilde: vec2f = textureLoad(heightAmplitudes, id.xy).rg;
   // let ik: vec2f = complexMultiply(vec2f(0, 1), k);
   let ik: vec2f = vec2f(-k.y, k.x);
