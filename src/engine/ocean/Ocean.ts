@@ -2,11 +2,9 @@ import { ButterflyTexture } from "./ButterflyTexture";
 import { HeightAmplitudes } from "./HeightAmplitudes";
 import { IFFT } from "./IFFT";
 import { SlopeVector } from "./SlopeVector";
-import { Permute } from "./Permute";
 
 class Ocean {
   private constructor(
-    private readonly permute: Permute,
     private readonly ifft: IFFT,
     private readonly heightAmplitudes: HeightAmplitudes,
     private readonly _slopeVector: SlopeVector
@@ -15,12 +13,11 @@ class Ocean {
   public create(time: number): void {
     this.heightAmplitudes.createSpectrum(time);
     this._slopeVector.create();
-    this.ifft.call();
-    this.permute.call();
+    this.ifft.compute();
   }
 
   public get heightMap(): GPUTexture {
-    return this.permute.permuted;
+    return this.ifft.activeTexture;
   }
 
   public get slopeVector(): GPUTexture {
@@ -45,15 +42,9 @@ class Ocean {
       device,
       textureSize,
       heightAmplitudes.texture,
-      butterflyTexture
-    );
-
-    const permute = await Permute.create(
-      device,
-      textureSize,
-      ifft,
       1,
-      "Wave Height Map"
+      "Wave Height Map",
+      butterflyTexture
     );
 
     const normalMap = await SlopeVector.create(
@@ -64,7 +55,7 @@ class Ocean {
       butterflyTexture
     );
 
-    return new Ocean(permute, ifft, heightAmplitudes, normalMap);
+    return new Ocean(ifft, heightAmplitudes, normalMap);
   }
 }
 

@@ -15,15 +15,11 @@ class Spectrum {
 
     const settingsBuffer = device.createBuffer({
       label: "Spectrum Settings Buffer",
-      size: 2 * Float32Array.BYTES_PER_ELEMENT,
+      size: 1 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    device.queue.writeBuffer(
-      settingsBuffer,
-      0,
-      new Float32Array([domainSize, textureSize])
-    );
+    device.queue.writeBuffer(settingsBuffer, 0, new Float32Array([domainSize]));
 
     this.spectrumTexture = device.createTexture({
       label: "Spectrum Texture",
@@ -67,7 +63,7 @@ class Spectrum {
     });
 
     const pipelineLayout = device.createPipelineLayout({
-      label: "Spectrum Compute Pipeline Layout",
+      label: "Spectrum Pipeline Layout",
       bindGroupLayouts: [bindGroupLayout],
     });
 
@@ -97,7 +93,7 @@ class Spectrum {
   ): Promise<Spectrum> {
     const shader = await Shader.from(
       ["spectrum", "random", "complexNumber"],
-      "Height Field Shader Module"
+      "Spectrum Shader Module"
     );
 
     return new Spectrum(device, domainSize, textureSize, shader);

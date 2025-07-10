@@ -2,7 +2,6 @@ import { Shader } from "@rendering/Shader";
 import { ButterflyTexture } from "./ButterflyTexture";
 import { IFFT } from "./IFFT";
 import { callCompute } from "@rendering/callCompute";
-import { Permute } from "./Permute";
 
 class SlopeVector {
   private readonly settingsBuffer: GPUBuffer;
@@ -12,7 +11,6 @@ class SlopeVector {
     private readonly device: GPUDevice,
     shader: Shader,
     private readonly ifft: IFFT,
-    private readonly permute: Permute,
     heightAmplitudesTexture: GPUTexture,
     fourierComponentsTexture: GPUTexture,
     private readonly textureSize: number,
@@ -22,14 +20,14 @@ class SlopeVector {
 
     this.settingsBuffer = device.createBuffer({
       label: "Slope Vector Settings Buffer",
-      size: 2 * Float32Array.BYTES_PER_ELEMENT,
+      size: 1 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
 
     device.queue.writeBuffer(
       this.settingsBuffer,
       0,
-      new Float32Array([domainSize, textureSize])
+      new Float32Array([domainSize])
     );
 
     const bindGroupLayout = device.createBindGroupLayout({
@@ -84,7 +82,7 @@ class SlopeVector {
     });
 
     this.pipeline = device.createComputePipeline({
-      label: "Slope Vector Pipeline",
+      label: "Slope Vector Compute Pipeline",
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
@@ -101,12 +99,11 @@ class SlopeVector {
       this.device
     );
 
-    this.ifft.call();
-    this.permute.call();
+    this.ifft.compute();
   }
 
   public get slopeVector(): GPUTexture {
-    return this.permute.permuted;
+    return this.ifft.activeTexture;
   }
 
   public static async create(
@@ -122,7 +119,7 @@ class SlopeVector {
     );
 
     const fourierComponentsTexture = device.createTexture({
-      label: "Slope Vector Fourier Components",
+      label: "Slope Vector Fourier Components Texture",
       size: [textureSize, textureSize],
       format: "rg32float",
       usage: GPUTextureUsage.STORAGE_BINDING,
@@ -132,22 +129,15 @@ class SlopeVector {
       device,
       textureSize,
       fourierComponentsTexture,
-      butterflyTexture
-    );
-
-    const permute = await Permute.create(
-      device,
-      textureSize,
-      ifft,
       2,
-      "Slope Vector"
+      "Slope Vector",
+      butterflyTexture
     );
 
     return new SlopeVector(
       device,
       shader,
       ifft,
-      permute,
       heightAmplitudesTexture,
       fourierComponentsTexture,
       textureSize,

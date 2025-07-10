@@ -11,7 +11,6 @@ struct VertexOutput {
 struct Settings {
   time: f32,
   meshSize: f32,
-  heightMapSize: f32,
   domainSize: f32,
 }
 
@@ -33,7 +32,8 @@ fn vertexMain(vertex: Vertex) -> VertexOutput {
   var output: VertexOutput;
   var vertexPosition: vec3f = vertex.position;
 
-  let samplePoint: vec2u = vec2u(vertexPosition.xz * settings.heightMapSize / settings.meshSize + settings.heightMapSize / 2);
+  let heightMapSize: f32 = f32(textureDimensions(heightMap).x);
+  let samplePoint: vec2u = vec2u(vertexPosition.xz * heightMapSize / settings.meshSize + heightMapSize / 2);
   let dy: f32 = textureLoad(heightMap, samplePoint).x;
   // ??? * 20? idk, the slopes were too small so...
   // TODO: FIX

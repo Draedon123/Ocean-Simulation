@@ -38,12 +38,12 @@ class Renderer {
 
   private initialised: boolean;
 
-  private renderBindGroup!: GPUBindGroup;
+  private bindGroup!: GPUBindGroup;
   private renderPipeline!: GPURenderPipeline;
   private depthTexture!: GPUTexture;
 
   private cameraBuffer!: GPUBuffer;
-  private renderSettingsBuffer!: GPUBuffer;
+  private settingsBuffer!: GPUBuffer;
 
   private ocean!: Ocean;
 
@@ -60,7 +60,7 @@ class Renderer {
 
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.skyboxRenderer = new SkyboxRenderer("Renderer Skybox");
+    this.skyboxRenderer = new SkyboxRenderer("Skybox Renderer");
     this.initialised = false;
 
     const settings = Object.assign(
@@ -105,7 +105,7 @@ class Renderer {
       format: this.canvasFormat,
     });
 
-    const cubemap = new Cubemap("Cubemap");
+    const cubemap = new Cubemap("Skybox Cubemap");
     await cubemap.initialise(
       this.device,
       "skybox/px.png",
@@ -123,38 +123,33 @@ class Renderer {
 
     const renderShaderModule = await Shader.from(
       ["vertex", "fragment"],
-      "Render Shader Module"
+      "Renderer Shader Module"
     );
 
     renderShaderModule.initialise(this.device);
 
     this.cameraBuffer = this.device.createBuffer({
-      label: "Camera Buffer",
+      label: "Renderer Camera Buffer",
       size: Camera.BYTE_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.renderSettingsBuffer = this.device.createBuffer({
-      label: "Settings Buffer",
-      size: 6 * Float32Array.BYTES_PER_ELEMENT,
+    this.settingsBuffer = this.device.createBuffer({
+      label: "Renderer Settings Buffer",
+      size: 3 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     this.device.queue.writeBuffer(
-      this.renderSettingsBuffer,
+      this.settingsBuffer,
       0,
-      new Float32Array([
-        0,
-        this.settings.meshSize,
-        this.settings.textureSize,
-        this.settings.domainSize,
-      ])
+      new Float32Array([0, this.settings.meshSize, this.settings.domainSize])
     );
 
     this.depthTexture = this.createDepthTexture();
 
     const renderBindGroupLayout = this.device.createBindGroupLayout({
-      label: "Render Bind Group Layout",
+      label: "Renderer Bind Group Layout",
       entries: [
         {
           binding: 0,
@@ -197,8 +192,8 @@ class Renderer {
       ],
     });
 
-    this.renderBindGroup = this.device.createBindGroup({
-      label: "Render Bind Group",
+    this.bindGroup = this.device.createBindGroup({
+      label: "Renderer Bind Group",
       layout: renderBindGroupLayout,
       entries: [
         {
@@ -210,7 +205,7 @@ class Renderer {
         {
           binding: 1,
           resource: {
-            buffer: this.renderSettingsBuffer,
+            buffer: this.settingsBuffer,
           },
         },
         {
@@ -235,12 +230,12 @@ class Renderer {
     });
 
     const renderPipelineLayout = this.device.createPipelineLayout({
-      label: "Render Pipeline Layout",
+      label: "Renderer Render Pipeline Layout",
       bindGroupLayouts: [renderBindGroupLayout],
     });
 
     this.renderPipeline = this.device.createRenderPipeline({
-      label: "Render Pipeline",
+      label: "Renderer Render Pipeline",
       layout: renderPipelineLayout,
       vertex: {
         module: renderShaderModule.shaderModule,
@@ -268,6 +263,7 @@ class Renderer {
 
   private createDepthTexture(): GPUTexture {
     return this.device.createTexture({
+      label: "Renderer Depth Texture",
       size: this.canvas,
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
@@ -286,17 +282,17 @@ class Renderer {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, camera.writeToBuffer());
 
     this.device.queue.writeBuffer(
-      this.renderSettingsBuffer,
+      this.settingsBuffer,
       0,
       new Float32Array([time])
     );
 
     const commandEncoder = this.device.createCommandEncoder({
-      label: "Render Command Encoder",
+      label: "Renderer Command Encoder",
     });
 
     const renderPass = commandEncoder.beginRenderPass({
-      label: "Render Pass",
+      label: "Renderer Render Pass",
       colorAttachments: [
         {
           view: this.ctx.getCurrentTexture().createView(),
@@ -312,7 +308,7 @@ class Renderer {
       },
     });
 
-    renderPass.setBindGroup(0, this.renderBindGroup);
+    renderPass.setBindGroup(0, this.bindGroup);
     renderPass.setPipeline(this.renderPipeline);
 
     for (const renderable of renderables) {

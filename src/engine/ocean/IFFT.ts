@@ -1,8 +1,11 @@
 import { Shader } from "@rendering/Shader";
 import { ButterflyTexture } from "./ButterflyTexture";
 import { callCompute } from "@rendering/callCompute";
+import { Permute } from "./Permute";
 
 class IFFT {
+  private static shader: Shader | null = null;
+
   private readonly settingsBuffer: GPUBuffer;
   private readonly bindGroup_1: GPUBindGroup;
   private readonly bindGroup_2: GPUBindGroup;
@@ -17,27 +20,28 @@ class IFFT {
     butterflyTexture: GPUTexture,
     shader: Shader,
     initialTexture: GPUTexture,
-    private readonly textureSize: number
+    private readonly textureSize: number,
+    private readonly permute: Permute,
+    label: string
   ) {
     this.pingPong = 0;
-    shader.initialise(device);
 
     this.settingsBuffer = device.createBuffer({
-      label: "IFFT Settings Buffer",
+      label: `${label} IFFT Settings Buffer`,
       size: 1 * Uint32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
 
     this.texture_1 = initialTexture;
     this.texture_2 = device.createTexture({
-      label: "IFFT Ping Pong Texture",
+      label: `${label} IFFT Ping Pong Texture`,
       format: "rg32float",
       size: [textureSize, textureSize],
       usage: GPUTextureUsage.STORAGE_BINDING,
     });
 
     const bindGroupLayout = device.createBindGroupLayout({
-      label: "IFFT Bind Group Layout",
+      label: `${label} IFFT Bind Group Layout`,
       entries: [
         {
           binding: 0,
@@ -72,7 +76,7 @@ class IFFT {
     });
 
     this.bindGroup_1 = device.createBindGroup({
-      label: "IFFT Bind Group 1",
+      label: `${label} IFFT Bind Group 1`,
       layout: bindGroupLayout,
       entries: [
         {
@@ -95,7 +99,7 @@ class IFFT {
     });
 
     this.bindGroup_2 = device.createBindGroup({
-      label: "IFFT Bind Group 2",
+      label: `${label} IFFT Bind Group 2`,
       layout: bindGroupLayout,
       entries: [
         {
@@ -118,12 +122,12 @@ class IFFT {
     });
 
     const pipelineLayout = device.createPipelineLayout({
-      label: "IFFT Pipeline Layout",
+      label: `${label} IFFT Pipeline Layout`,
       bindGroupLayouts: [bindGroupLayout],
     });
 
     this.pipelineHorizontal = device.createComputePipeline({
-      label: "IFFT Pipeline Horizontal",
+      label: `${label} IFFT Horizontal Compute Pipeline`,
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
@@ -132,16 +136,18 @@ class IFFT {
     });
 
     this.pipelineVertical = device.createComputePipeline({
-      label: "IFFT Pipeline Vertical",
+      label: `${label} IFFT Vertical Compute Pipeline`,
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
         entryPoint: "vertical",
       },
     });
+
+    permute.initialise(this);
   }
 
-  public call(): void {
+  public compute(): void {
     this.pingPong = 0;
     const stages = Math.log2(this.textureSize);
 
@@ -156,13 +162,19 @@ class IFFT {
       this.vertical();
       this.pingPong = (this.pingPong + 1) % 2;
     }
+
+    this.permute.compute();
+  }
+
+  public get activeTexture(): GPUTexture {
+    return this.permute.permuted;
   }
 
   private horizontal(): void {
     callCompute(
       this.pingPong === 0 ? this.bindGroup_1 : this.bindGroup_2,
       this.pipelineHorizontal,
-      [this.textureSize, this.textureSize, 1],
+      [this.textureSize / 8, this.textureSize / 8, 1],
       this.device
     );
   }
@@ -171,7 +183,7 @@ class IFFT {
     callCompute(
       this.pingPong === 0 ? this.bindGroup_1 : this.bindGroup_2,
       this.pipelineVertical,
-      [this.textureSize, this.textureSize, 1],
+      [this.textureSize / 8, this.textureSize / 8, 1],
       this.device
     );
   }
@@ -184,16 +196,29 @@ class IFFT {
     );
   }
 
+  private static async getShader(device: GPUDevice): Promise<Shader> {
+    if (this.shader === null) {
+      const shader = await Shader.from(
+        ["butterfly", "complexNumber"],
+        "IFFT Shader Module"
+      );
+
+      shader.initialise(device);
+      this.shader = shader;
+    }
+
+    return this.shader;
+  }
+
   public static async create(
     device: GPUDevice,
     textureSize: number,
     initialTexture: GPUTexture,
+    dimensions: 1 | 2,
+    label: string,
     _butterflyTexture?: ButterflyTexture
   ): Promise<IFFT> {
-    const shader = await Shader.from(
-      ["butterfly", "complexNumber"],
-      "IFFT Shader Module"
-    );
+    const shader = await this.getShader(device);
 
     const butterflyTexture = _butterflyTexture
       ? _butterflyTexture
@@ -202,12 +227,21 @@ class IFFT {
       butterflyTexture.createTexture();
     }
 
+    const permute = await Permute.create(
+      device,
+      textureSize,
+      dimensions,
+      label
+    );
+
     return new IFFT(
       device,
       butterflyTexture.butterflyTexture,
       shader,
       initialTexture,
-      textureSize
+      textureSize,
+      permute,
+      label
     );
   }
 }

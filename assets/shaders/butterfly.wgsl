@@ -8,7 +8,7 @@ struct Settings {
 @group(0) @binding(3) var textureOut: texture_storage_2d<rg32float, write>;
 
 @compute
-@workgroup_size(1, 1, 1)
+@workgroup_size(8, 8, 1)
 fn horizontal(@builtin(global_invocation_id) id: vec3u) {
   let data: vec4f = textureLoad(butterflyTexture, vec2u(settings.stage, id.x));
   let p: vec2f = textureLoad(textureIn, vec2u(u32(data.z), id.y)).rg;
@@ -20,7 +20,7 @@ fn horizontal(@builtin(global_invocation_id) id: vec3u) {
 }
 
 @compute
-@workgroup_size(1, 1, 1)
+@workgroup_size(8, 8, 1)
 fn vertical(@builtin(global_invocation_id) id: vec3u) {
   let data: vec4f = textureLoad(butterflyTexture, vec2u(settings.stage, id.y));
   let p: vec2f = textureLoad(textureIn, vec2u(id.x, u32(data.z))).rg;

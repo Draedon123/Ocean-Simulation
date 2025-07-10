@@ -19,7 +19,7 @@ class HeightAmplitudes {
 
     this.settingsBuffer = device.createBuffer({
       label: "Height Amplitudes Settings Buffer",
-      size: 3 * Float32Array.BYTES_PER_ELEMENT,
+      size: 2 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
 
@@ -84,7 +84,7 @@ class HeightAmplitudes {
     });
 
     this.pipeline = device.createComputePipeline({
-      label: "Height Amplitudes Pipeline",
+      label: "Height Amplitudes Compute Pipeline",
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
@@ -96,14 +96,19 @@ class HeightAmplitudes {
   public createSpectrum(time: number): void {
     this.writeSettings(time, this.domainSize);
 
-    callCompute(this.bindGroup, this.pipeline, [64, 64, 1], this.device);
+    callCompute(
+      this.bindGroup,
+      this.pipeline,
+      [this.textureSize / 8, this.textureSize / 8, 1],
+      this.device
+    );
   }
 
   public writeSettings(time: number, domainSize: number): void {
     this.device.queue.writeBuffer(
       this.settingsBuffer,
       0,
-      new Float32Array([time, domainSize, this.textureSize])
+      new Float32Array([time, domainSize])
     );
   }
 

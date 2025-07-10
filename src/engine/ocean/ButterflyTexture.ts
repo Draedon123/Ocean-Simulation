@@ -2,8 +2,9 @@ import { callCompute } from "@rendering/callCompute";
 import { Shader } from "@rendering/Shader";
 
 class ButterflyTexture {
+  private static shader: Shader | null = null;
+
   public readonly butterflyTexture: GPUTexture;
-  private readonly settingsBuffer: GPUBuffer;
   private readonly bindGroup: GPUBindGroup;
   private readonly pipeline: GPUComputePipeline;
   private constructor(
@@ -11,22 +12,8 @@ class ButterflyTexture {
     private readonly height: number,
     shader: Shader
   ) {
-    shader.initialise(device);
-
-    this.settingsBuffer = device.createBuffer({
-      label: "Butterfly Texture Settings Buffer",
-      size: 1 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-    });
-
-    device.queue.writeBuffer(
-      this.settingsBuffer,
-      0,
-      new Float32Array([height])
-    );
-
     const bitReversedIndicesBuffer = device.createBuffer({
-      label: "Butterfly Texture Bit Reversed Indices",
+      label: "Butterfly Texture Bit Reversed Indices Buffer",
       size: height * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
     });
@@ -49,16 +36,11 @@ class ButterflyTexture {
       entries: [
         {
           binding: 0,
-          buffer: {},
-          visibility: GPUShaderStage.COMPUTE,
-        },
-        {
-          binding: 1,
           buffer: { type: "read-only-storage" },
           visibility: GPUShaderStage.COMPUTE,
         },
         {
-          binding: 2,
+          binding: 1,
           storageTexture: {
             access: "write-only",
             format: "rgba32float",
@@ -74,14 +56,10 @@ class ButterflyTexture {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.settingsBuffer },
-        },
-        {
-          binding: 1,
           resource: { buffer: bitReversedIndicesBuffer },
         },
         {
-          binding: 2,
+          binding: 1,
           resource: this.butterflyTexture.createView(),
         },
       ],
@@ -93,7 +71,7 @@ class ButterflyTexture {
     });
 
     this.pipeline = device.createComputePipeline({
-      label: "Butterfly Texture Pipeline Layout",
+      label: "Butterfly Texture Compute Pipeline",
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
@@ -106,7 +84,7 @@ class ButterflyTexture {
     callCompute(
       this.bindGroup,
       this.pipeline,
-      [Math.log2(this.height), this.height, 1],
+      [Math.log2(this.height), this.height / 64, 1],
       this.device
     );
   }
@@ -130,14 +108,25 @@ class ButterflyTexture {
     return result;
   }
 
+  private static async getShader(device: GPUDevice): Promise<Shader> {
+    if (this.shader === null) {
+      const shader = await Shader.from(
+        ["butterflyTexture", "complexNumber"],
+        "Butterfly Texture Shader Module"
+      );
+
+      shader.initialise(device);
+      this.shader = shader;
+    }
+
+    return this.shader;
+  }
+
   public static async create(
     device: GPUDevice,
     textureHeight: number
   ): Promise<ButterflyTexture> {
-    const shader = await Shader.from(
-      ["butterflyTexture", "complexNumber"],
-      "Butterfly Texture Shader Module"
-    );
+    const shader = await this.getShader(device);
 
     return new ButterflyTexture(device, textureHeight, shader);
   }

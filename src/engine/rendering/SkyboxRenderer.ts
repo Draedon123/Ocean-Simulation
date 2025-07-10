@@ -23,7 +23,7 @@ class SkyboxRenderer {
     this.skyboxes = skyboxes;
     this.bindGroups = [];
     this.inversePespectiveViewMatrix = new Matrix4Buffer(
-      `Skybox ${this.label} Inverse Perspective View Matrix Butter`
+      `${this.label} Inverse Perspective View Matrix Buffer`
     );
 
     this.initialised = false;
@@ -39,20 +39,20 @@ class SkyboxRenderer {
 
     this.device = device;
     this.sampler = device.createSampler({
-      label: `Skybox Renderer ${this.label} Sampler`,
+      label: `${this.label} Sampler`,
     });
 
     this.inversePespectiveViewMatrix.initialise(device);
 
     const renderShaderModule = await Shader.from(
       "skybox",
-      `Skybox Renderer "${this.label}" Shader Module`
+      `${this.label} Shader Module`
     );
 
     renderShaderModule.initialise(device);
 
     this.renderBindGroupLayout = device.createBindGroupLayout({
-      label: `Skybox Renderer "${this.label}" Bind Group Layout`,
+      label: `${this.label} Bind Group Layout`,
       entries: [
         {
           binding: 0,
@@ -75,11 +75,11 @@ class SkyboxRenderer {
     });
 
     const renderPipelineLayout = device.createPipelineLayout({
-      label: `Skybox Renderer "${this.label}" Render Pipeline Layout`,
+      label: `${this.label} Render Pipeline Layout`,
       bindGroupLayouts: [this.renderBindGroupLayout],
     });
     this.renderPipeline = device.createRenderPipeline({
-      label: `Skybox Renderer "${this.label}" Render Pipeline`,
+      label: `${this.label} Render Pipeline`,
       layout: renderPipelineLayout,
       vertex: {
         module: renderShaderModule.shaderModule,
@@ -109,7 +109,7 @@ class SkyboxRenderer {
 
   public addSkybox(skybox: Cubemap): void {
     const renderBindGroup = this.device.createBindGroup({
-      label: `Skybox Renderer "${skybox.label}" Bind Group`,
+      label: `${this.label} ${skybox.label} Bind Group`,
       layout: this.renderBindGroupLayout,
       entries: [
         {
@@ -151,7 +151,7 @@ class SkyboxRenderer {
 
   public render(renderPass: GPURenderPassEncoder, camera: Camera): void {
     if (!this.initialised) {
-      console.error(`Skybox Renderer "${this.label}" not initialised`);
+      console.error(`${this.label} not initialised`);
 
       return;
     }

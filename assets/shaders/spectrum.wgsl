@@ -2,7 +2,6 @@
 
 struct Settings {
   domainSize: f32,
-  samples: f32,
 }
 
 @group(0) @binding(0) var <uniform> settings: Settings;
@@ -19,7 +18,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 }
 
 fn spectrum(pixel: vec2f) -> vec2f {
-  let k: vec2f = 2 * PI * (pixel - settings.samples / 2) / settings.domainSize;
+  let samples: f32 = f32(textureDimensions(spectrumTexture).x);
+  let k: vec2f = 2 * PI * (pixel - samples / 2) / settings.domainSize;
   let kLength: f32 = length(k);
   // let theta: f32 = atan2(k.y, k.x);
 
@@ -42,8 +42,8 @@ fn spectrum(pixel: vec2f) -> vec2f {
 
 fn phillipsSpectrum(k: vec2f, kLength: f32) -> f32 {
   let A: f32 = 1.0;
-  let windDirection: vec2f = normalize(vec2f(1.0, 0.0));
-  let windSpeed: f32 = 30;
+  let windDirection: vec2f = normalize(vec2f(1.0, 1.0));
+  let windSpeed: f32 = 50;
   let kSquared: f32 = kLength * kLength;
   let kSquaredReciprocal: f32 = 1 / kSquared;
   let L: f32 = windSpeed * windSpeed / 9.81;
