@@ -1,6 +1,5 @@
 const U_THRESHOLD: f32 = 1e-7;
 
-// https://web.archive.org/web/20100716035328/http://saluc.engr.uconn.edu/refs/crypto/rng/leva92afast.pdf
 fn gaussian(state: vec2f) -> f32 {
   var value: f32 = 0;
   var i: f32 = 0;
@@ -35,7 +34,6 @@ fn gaussian(state: vec2f) -> f32 {
   return value;
 }
 
-// https://thebookofshaders.com/10/
 fn uniformFloat(state: vec2f) -> f32 {
   return fract(sin(dot(state, vec2(12.9898, 78.233))) * 43758.5453123);
 }
