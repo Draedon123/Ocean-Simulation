@@ -1,5 +1,3 @@
-// https://people.computing.clemson.edu/~jtessen/reports/papers_files/coursenotes2004.pdf
-
 struct Settings {
   time: f32,
   domainSize: f32,

@@ -1,6 +1,3 @@
-// https://www.orcina.com/webhelp/OrcaFlex/Content/html/Waves,Wavespectra.htm
-// https://henry.baw.de/server/api/core/bitstreams/be354ad0-a091-4b59-a0c2-a108970a4bbb/content
-
 struct JonswapParameters {
   g: f32,
   F: f32,
