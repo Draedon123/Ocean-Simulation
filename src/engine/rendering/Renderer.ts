@@ -189,6 +189,14 @@ class Renderer {
           },
           visibility: GPUShaderStage.VERTEX,
         },
+        {
+          binding: 6,
+          storageTexture: {
+            format: "rg32float",
+            access: "read-only",
+          },
+          visibility: GPUShaderStage.VERTEX,
+        },
       ],
     });
 
@@ -225,6 +233,10 @@ class Renderer {
         {
           binding: 5,
           resource: this.ocean.slopeVector.createView(),
+        },
+        {
+          binding: 6,
+          resource: this.ocean.displacementField.createView(),
         },
       ],
     });

@@ -1,6 +1,7 @@
 A basic ocean simulation built with WebGPU. Demo at https://draedon123.github.io/Ocean-Simulation/
 
 Original skybox texture from https://polyhaven.com/a/table_mountain_1_puresky
+
 Skybox converted to cubemap textures using https://jaxry.github.io/panorama-to-cubemap/
 
 References:
