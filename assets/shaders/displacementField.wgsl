@@ -16,8 +16,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let kLength: f32 = length(k);
   let unitK: vec2f = select(normalize(k), vec2f(0.0), kLength == 0);
   let hTilde: vec2f = textureLoad(heightAmplitudes, id.xy).rg;
-  let ikOverKNegative: vec2f = vec2f(unitK.y, -unitK.x);
-  let value: vec2f = complexMultiply(ikOverKNegative, hTilde);
+  let ikOverNegativeK: vec2f = vec2f(unitK.y, -unitK.x);
+  let value: vec2f = complexMultiply(ikOverNegativeK, hTilde);
 
   textureStore(fourierComponents, id.xy, vec4f(value, 0.0, 0.0));
 }

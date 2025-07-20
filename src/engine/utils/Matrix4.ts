@@ -32,30 +32,6 @@ class Matrix4 {
     return this;
   }
 
-  // public transpose(): this {
-  //   const a01 = this.components[1];
-  //   const a02 = this.components[2];
-  //   const a03 = this.components[3];
-  //   const a12 = this.components[6];
-  //   const a13 = this.components[7];
-  //   const a23 = this.components[11];
-
-  //   this.components[1] = this.components[4];
-  //   this.components[2] = this.components[8];
-  //   this.components[3] = this.components[12];
-  //   this.components[4] = a01;
-  //   this.components[6] = this.components[9];
-  //   this.components[7] = this.components[13];
-  //   this.components[8] = a02;
-  //   this.components[9] = a12;
-  //   this.components[11] = this.components[14];
-  //   this.components[12] = a03;
-  //   this.components[13] = a13;
-  //   this.components[14] = a23;
-
-  //   return this;
-  // }
-
   public invert(): this {
     const a00 = this.components[0];
     const a01 = this.components[1];
@@ -132,38 +108,6 @@ class Matrix4 {
 
     return this;
   }
-
-  // public determinant(): number {
-  //   const a00 = this.components[0];
-  //   const a01 = this.components[1];
-  //   const a02 = this.components[2];
-  //   const a03 = this.components[3];
-  //   const a10 = this.components[4];
-  //   const a11 = this.components[5];
-  //   const a12 = this.components[6];
-  //   const a13 = this.components[7];
-  //   const a20 = this.components[8];
-  //   const a21 = this.components[9];
-  //   const a22 = this.components[10];
-  //   const a23 = this.components[11];
-  //   const a30 = this.components[12];
-  //   const a31 = this.components[13];
-  //   const a32 = this.components[14];
-  //   const a33 = this.components[15];
-
-  //   const b0 = a00 * a11 - a01 * a10;
-  //   const b1 = a00 * a12 - a02 * a10;
-  //   const b2 = a01 * a12 - a02 * a11;
-  //   const b3 = a20 * a31 - a21 * a30;
-  //   const b4 = a20 * a32 - a22 * a30;
-  //   const b5 = a21 * a32 - a22 * a31;
-  //   const b6 = a00 * b5 - a01 * b4 + a02 * b3;
-  //   const b7 = a10 * b5 - a11 * b4 + a12 * b3;
-  //   const b8 = a20 * b2 - a21 * b1 + a22 * b0;
-  //   const b9 = a30 * b2 - a31 * b1 + a32 * b0;
-
-  //   return a13 * b6 - a03 * b7 + a33 * b8 - a23 * b9;
-  // }
 
   public preMultiply(a: Matrix4): this {
     Matrix4.multiply(a, this, this);

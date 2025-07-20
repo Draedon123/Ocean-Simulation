@@ -1,5 +1,4 @@
 import { Matrix4 } from "./Matrix4";
-import { Vector2 } from "./Vector2";
 import { Vector3 } from "./Vector3";
 
 class BufferWriter {
@@ -31,11 +30,6 @@ class BufferWriter {
     this.offset += 4;
   }
 
-  public writeVec2f32(vec2f32: Vector2): void {
-    this.writeFloat32(vec2f32.x);
-    this.writeFloat32(vec2f32.y);
-  }
-
   public writeVec3f32(vec3f32: Vector3): void {
     this.writeFloat32(vec3f32.x);
     this.writeFloat32(vec3f32.y);
@@ -48,9 +42,9 @@ class BufferWriter {
     }
   }
 
-  public writeBooleanAsUint32(boolean: boolean): void {
-    this.writeUint32(boolean ? 1 : 0);
-  }
+  // public writeBooleanAsUint32(boolean: boolean): void {
+  //   this.writeUint32(boolean ? 1 : 0);
+  // }
 
   public pad(bytes: number): void {
     for (let i = 0; i < bytes; i++) {

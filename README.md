@@ -1,4 +1,4 @@
-A basic ocean simulation built with WebGPU. Demo at https://draedon123.github.io/Ocean-Simulation/
+A basic FFT ocean simulation built with WebGPU. Demo at https://draedon123.github.io/Ocean-Simulation/
 
 Original skybox texture from https://polyhaven.com/a/table_mountain_1_puresky
 

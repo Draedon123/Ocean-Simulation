@@ -43,8 +43,10 @@ async function main(): Promise<void> {
   await renderer.initialise();
 
   const camera = new Camera({
-    position: new Vector3(0, 0.5, 5),
+    position: new Vector3(0, 5, -25),
     movementSpeed: 0.1,
+    pitch: -20,
+    yaw: 90,
   });
   const meshData = subdivideSquare(textureSize - 1, oceanSize);
   const oceanMesh = new Mesh(meshData.vertices, meshData.indices, "Ocean Mesh");

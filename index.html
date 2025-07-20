@@ -6,7 +6,13 @@
     <title>Ocean Simulation</title>
   </head>
   <body>
-    <span class="loading">Loading...</span>
+    <span class="loading">
+      Loading...
+      <small
+        >Skybox textures are relatively large (six 2048x2048 images) so it could
+        take a second depending on your connection
+      </small>
+    </span>
     <canvas></canvas>
     <style>
       .loading {
@@ -14,8 +20,10 @@
         height: 100vh;
 
         font-size: xx-large;
+        text-align: center;
 
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         position: absolute;

@@ -21,13 +21,16 @@ type CameraOptions = {
   near: number;
   far: number;
 
+  pitch: number;
+  yaw: number;
+
   movementSpeed: number;
   mouseSensitivity: number;
 
   keybinds: Partial<Keybinds>;
 };
 
-class Camera implements CameraOptions {
+class Camera {
   public static readonly BYTE_SIZE: number =
     32 * Float32Array.BYTES_PER_ELEMENT;
 
@@ -62,8 +65,10 @@ class Camera implements CameraOptions {
     this.forward = new Vector3(0, 0, -1);
     this.up = new Vector3(0, 1, 0);
 
-    this.pitch = 0;
-    this.yaw = -90;
+    this.pitch = options.pitch ?? 0;
+    this.yaw = options.yaw ?? 0;
+
+    this.updateForwardVector();
 
     this.keybinds = {
       forwards: options.keybinds?.forwards ?? "KeyW",
@@ -164,22 +169,26 @@ class Camera implements CameraOptions {
       this.yaw += deltaX;
       this.pitch = clamp(this.pitch + deltaY, -89, 89);
 
-      const yaw = degreesToRadians(this.yaw);
-      const pitch = degreesToRadians(this.pitch);
-
-      const cosYaw = Math.cos(yaw);
-      const cosPitch = Math.cos(pitch);
-      const sinYaw = Math.sin(yaw);
-      const sinPitch = Math.sin(pitch);
-
-      const direction = new Vector3(
-        cosYaw * cosPitch,
-        sinPitch,
-        sinYaw * cosPitch
-      ).normalise();
-
-      this.forward = direction;
+      this.updateForwardVector();
     });
+  }
+
+  private updateForwardVector(): void {
+    const yaw = degreesToRadians(this.yaw);
+    const pitch = degreesToRadians(this.pitch);
+
+    const cosYaw = Math.cos(yaw);
+    const cosPitch = Math.cos(pitch);
+    const sinYaw = Math.sin(yaw);
+    const sinPitch = Math.sin(pitch);
+
+    const direction = new Vector3(
+      cosYaw * cosPitch,
+      sinPitch,
+      sinYaw * cosPitch
+    ).normalise();
+
+    this.forward = direction;
   }
 }
 

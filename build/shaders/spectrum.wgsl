@@ -41,7 +41,7 @@ fn spectrum(pixel: vec2f) -> vec2f {
 fn phillipsSpectrum(k: vec2f, kLength: f32) -> f32 {
   let A: f32 = 1.0;
   let windDirection: vec2f = normalize(vec2f(1.0, 1.0));
-  let windSpeed: f32 = 50;
+  let windSpeed: f32 = 30;
   let kSquared: f32 = kLength * kLength;
   let kSquaredReciprocal: f32 = 1 / kSquared;
   let L: f32 = windSpeed * windSpeed / 9.81;
