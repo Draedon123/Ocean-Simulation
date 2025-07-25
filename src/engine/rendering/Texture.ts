@@ -1,17 +1,16 @@
 import { resolveBasePath } from "@utils/resolveBasePath";
 
 class Texture {
-  protected initialised: boolean;
-  public texture!: GPUTexture;
-  constructor(public readonly label: string = "") {
-    this.initialised = false;
-  }
+  constructor(
+    public readonly label: string,
+    public readonly texture: GPUTexture
+  ) {}
 
-  public async initialise(device: GPUDevice, ...urls: string[]): Promise<void> {
-    if (this.initialised) {
-      return;
-    }
-
+  public static async create(
+    device: GPUDevice,
+    label: string,
+    ...urls: string[]
+  ): Promise<Texture> {
     const requests = urls.map(
       async (url) => await (await fetch(resolveBasePath(url))).blob()
     );
@@ -20,8 +19,8 @@ class Texture {
       blobs.map((blob) => createImageBitmap(blob))
     );
 
-    this.texture = device.createTexture({
-      label: this.label,
+    const texture = device.createTexture({
+      label,
       format: "rgba8unorm",
       size: [sources[0].width, sources[0].height, sources.length],
       usage:
@@ -38,7 +37,7 @@ class Texture {
           source: source,
         },
         {
-          texture: this.texture,
+          texture,
           origin: [0, 0, layer],
         },
         {
@@ -48,7 +47,24 @@ class Texture {
       );
     }
 
-    this.initialised = true;
+    return new Texture(label, texture);
+  }
+
+  public static async createCubemap(
+    device: GPUDevice,
+    label: string,
+    textureDirectory: string
+  ): Promise<Texture> {
+    return await Texture.create(
+      device,
+      label,
+      `${textureDirectory}/px.png`,
+      `${textureDirectory}/nx.png`,
+      `${textureDirectory}/py.png`,
+      `${textureDirectory}/ny.png`,
+      `${textureDirectory}/pz.png`,
+      `${textureDirectory}/nz.png`
+    );
   }
 }
 

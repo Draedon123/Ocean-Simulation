@@ -2,6 +2,7 @@ import { Shader } from "@rendering/Shader";
 import { ButterflyTexture } from "./ButterflyTexture";
 import { callCompute } from "@rendering/callCompute";
 import { Permute } from "./Permute";
+import { bufferData } from "@utils/bufferData";
 
 class IFFT {
   private static shader: Shader | null = null;
@@ -26,11 +27,12 @@ class IFFT {
   ) {
     this.pingPong = 0;
 
-    this.settingsBuffer = device.createBuffer({
-      label: `${label} IFFT Settings Buffer`,
-      size: 1 * Uint32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-    });
+    this.settingsBuffer = bufferData(
+      device,
+      `${label} IFFT Settings Buffer`,
+      GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+      new Float32Array([0])
+    );
 
     this.texture_1 = initialTexture;
     this.texture_2 = device.createTexture({
@@ -198,12 +200,12 @@ class IFFT {
 
   private static async getShader(device: GPUDevice): Promise<Shader> {
     if (this.shader === null) {
-      const shader = await Shader.from(
-        ["butterfly", "complexNumber"],
-        "IFFT Shader Module"
+      const shader = await Shader.create(
+        device,
+        ["compute/ifft/butterfly", "utils/complexNumber"],
+        "compute/ifft Shader Module"
       );
 
-      shader.initialise(device);
       this.shader = shader;
     }
 
@@ -223,6 +225,7 @@ class IFFT {
     const butterflyTexture = _butterflyTexture
       ? _butterflyTexture
       : await ButterflyTexture.create(device, textureSize);
+
     if (_butterflyTexture === undefined) {
       butterflyTexture.createTexture();
     }

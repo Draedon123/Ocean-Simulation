@@ -1,63 +1,41 @@
+import { bufferData } from "@utils/bufferData";
+
 class Mesh {
-  public vertexBuffer!: GPUBuffer;
-  public indexBuffer!: GPUBuffer;
-  private initialised: boolean;
+  public readonly vertexBuffer: GPUBuffer;
+  public readonly indexBuffer: GPUBuffer;
+
+  private readonly vertices: Float32Array;
+  private readonly indices: Uint16Array | Uint32Array;
   constructor(
-    private readonly vertices: number[],
-    private readonly indices: number[],
+    device: GPUDevice,
+    _vertices: number[],
+    _indices: number[],
     public readonly label: string = ""
   ) {
-    this.initialised = false;
-  }
-
-  public initialise(device: GPUDevice): void {
-    if (this.initialised) {
-      return;
-    }
-
-    const vertices = new Float32Array(this.vertices);
-    const indices = new (
+    this.vertices = new Float32Array(_vertices);
+    this.indices = new (
       this.indexFormat === "uint16" ? Uint16Array : Uint32Array
-    )(this.indices);
+    )(_indices);
 
-    this.vertexBuffer = device.createBuffer({
-      label: `${this.label} Vertex Buffer`,
-      size: vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
+    this.vertexBuffer = bufferData(
+      device,
+      `${this.label} Vertex Buffer`,
+      GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      this.vertices
+    );
 
-    this.indexBuffer = device.createBuffer({
-      label: `${this.label} Index Buffer`,
-      size: indices.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-    });
-
-    device.queue.writeBuffer(this.vertexBuffer, 0, vertices);
-    device.queue.writeBuffer(this.indexBuffer, 0, indices);
-
-    this.initialised = true;
+    this.indexBuffer = bufferData(
+      device,
+      `${this.label} Index Buffer`,
+      GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      this.indices
+    );
   }
 
   public render(renderPass: GPURenderPassEncoder): void {
-    if (!this.initialised) {
-      console.error(`Mesh ${this.label} not initialised`);
-
-      return;
-    }
-
-    this.bind(renderPass);
-    renderPass.drawIndexed(this.indexCount);
-  }
-
-  public bind(renderPass: GPURenderPassEncoder): void {
-    if (!this.initialised) {
-      console.error(`Mesh ${this.label} not initialised`);
-
-      return;
-    }
-
     renderPass.setVertexBuffer(0, this.vertexBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, this.indexFormat);
+    renderPass.drawIndexed(this.indexCount);
   }
 
   public get verticeCount(): number {

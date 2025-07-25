@@ -39,26 +39,33 @@ async function main(): Promise<void> {
     meshSize: oceanSize,
     domainSize: 2000,
     textureSize,
+    waveSpectrum: "phillips",
   });
   await renderer.initialise();
 
   const camera = new Camera({
     position: new Vector3(0, 5, -25),
-    movementSpeed: 0.1,
+    movementSpeed: 10,
     pitch: -20,
     yaw: 90,
   });
   const meshData = subdivideSquare(textureSize - 1, oceanSize);
-  const oceanMesh = new Mesh(meshData.vertices, meshData.indices, "Ocean Mesh");
+  const oceanMesh = new Mesh(
+    renderer.device,
+    meshData.vertices,
+    meshData.indices,
+    "Ocean Mesh"
+  );
 
   const loop = new Loop();
-
-  oceanMesh.initialise(renderer.device);
 
   const loopCallback: Callback = (data: FrameData): void => {
     const totalTimeSeconds = data.totalTimeMS / 1000;
 
-    camera.checkKeyboardInputs();
+    if (data.deltaTimeMS < 500) {
+      camera.checkKeyboardInputs(data.deltaTimeSeconds);
+    }
+
     renderer.render(camera, [oceanMesh], totalTimeSeconds);
   };
 

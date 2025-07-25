@@ -2,7 +2,7 @@ import { Matrix4 } from "./Matrix4";
 import { Vector3 } from "./Vector3";
 
 class BufferWriter {
-  public readonly buffer: ArrayBufferLike;
+  public readonly buffer: ArrayBuffer;
   private readonly dataview: DataView;
   constructor(
     bufferOrLength: ArrayBuffer | number = new ArrayBuffer(),
@@ -18,6 +18,11 @@ class BufferWriter {
 
   public toFloat32Array(): Float32Array {
     return new Float32Array(this.buffer);
+  }
+
+  public writeUint8(uint8: number): void {
+    this.dataview.setUint8(this.offset, uint8);
+    this.offset += 1;
   }
 
   public writeFloat32(float32: number): void {
@@ -48,8 +53,7 @@ class BufferWriter {
 
   public pad(bytes: number): void {
     for (let i = 0; i < bytes; i++) {
-      this.dataview.setUint8(this.offset, 0);
-      this.offset += 1;
+      this.writeUint8(0);
     }
   }
 }

@@ -123,11 +123,6 @@ class Permute {
     dimensions: 1 | 2
   ): Promise<Shader> {
     if (!(dimensions in this.shaders)) {
-      const shader = await Shader.from(
-        "permute",
-        `${dimensions}d Permute Shader Module`
-      );
-
       const textureFormat = dimensions === 1 ? "r" : "rg";
       const dataType = dimensions === 1 ? "f32" : "vec2f";
       const transform =
@@ -135,12 +130,17 @@ class Permute {
           ? "vec4f(transformed, 0.0, 0.0, 0.0)"
           : "vec4f(transformed, 0.0, 0.0)";
 
-      shader.code = shader.code
-        .replaceAll("__FORMAT__", textureFormat)
-        .replaceAll("__DATA_TYPE__", dataType)
-        .replaceAll("__TRANSFORM__", transform);
+      const shader = await Shader.create(
+        device,
+        "compute/ifft/permute",
+        `${dimensions}d Permute Shader Module`,
+        (code) =>
+          code
+            .replaceAll("__FORMAT__", textureFormat)
+            .replaceAll("__DATA_TYPE__", dataType)
+            .replaceAll("__TRANSFORM__", transform)
+      );
 
-      shader.initialise(device);
       this.shaders[dimensions] = shader;
     }
 

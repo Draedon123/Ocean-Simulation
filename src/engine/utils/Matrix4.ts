@@ -109,12 +109,17 @@ class Matrix4 {
     return this;
   }
 
-  public preMultiply(a: Matrix4): this {
-    Matrix4.multiply(a, this, this);
+  // public preMultiply(a: Matrix4): this {
+  //   Matrix4.multiply(a, this, this);
 
-    return this;
-  }
+  //   return this;
+  // }
 
+  /**
+   * Returns `this * a`
+   * @param { Matrix4 } a
+   * @returns { this }
+   */
   public postMultiply(a: Matrix4): this {
     Matrix4.multiply(this, a, this);
 

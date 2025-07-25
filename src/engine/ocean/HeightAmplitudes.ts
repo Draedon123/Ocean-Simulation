@@ -1,6 +1,7 @@
 import { callCompute } from "@rendering/callCompute";
 import { Shader } from "@rendering/Shader";
 import { Spectrum } from "./Spectrum";
+import { bufferData } from "@utils/bufferData";
 
 class HeightAmplitudes {
   private readonly settingsBuffer: GPUBuffer;
@@ -14,16 +15,14 @@ class HeightAmplitudes {
     public readonly textureSize: number,
     shader: Shader
   ) {
-    shader.initialise(device);
     this.spectrum.createSpectrum();
 
-    this.settingsBuffer = device.createBuffer({
-      label: "Height Amplitudes Settings Buffer",
-      size: 2 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-    });
-
-    this.writeSettings(0, domainSize);
+    this.settingsBuffer = bufferData(
+      device,
+      "Height Amplitudes Settings Buffer",
+      GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+      new Float32Array([0, domainSize])
+    );
 
     this.texture = device.createTexture({
       label: "Height Amplitudes Texture",
@@ -118,15 +117,15 @@ class HeightAmplitudes {
 
   public static async create(
     device: GPUDevice,
+    spectrum: Spectrum,
     domainSize: number,
     textureSize: number
   ): Promise<HeightAmplitudes> {
-    const shader = await Shader.from(
-      ["heightAmplitudes", "complexNumber"],
+    const shader = await Shader.create(
+      device,
+      ["compute/heightAmplitudes", "utils/complexNumber", "utils/waveVector"],
       "Height Amplitudes Shader Module"
     );
-
-    const spectrum = await Spectrum.create(device, domainSize, textureSize);
 
     return new HeightAmplitudes(
       device,

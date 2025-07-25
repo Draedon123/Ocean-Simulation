@@ -1,13 +1,18 @@
 import { resolveBasePath } from "@utils/resolveBasePath";
 
 class Shader {
-  protected initialised: boolean;
   public shaderModule!: GPUShaderModule;
   constructor(
+    device: GPUDevice,
     public code: string,
     public readonly label?: string
   ) {
-    this.initialised = false;
+    const shaderModule = device.createShaderModule({
+      label: this.label,
+      code: this.code,
+    });
+
+    this.shaderModule = shaderModule;
   }
 
   protected static async joinURLContents(urls: string[]): Promise<string> {
@@ -20,30 +25,16 @@ class Shader {
     return (await Promise.all(promises)).join("");
   }
 
-  public static async from(
+  public static async create(
+    device: GPUDevice,
     url: string[] | string,
-    label?: string
+    label: string,
+    codeOverride: (code: string) => string = (code: string) => code
   ): Promise<Shader> {
     const urls = typeof url === "string" ? [url] : url;
     const code = await Shader.joinURLContents(urls);
 
-    return new Shader(code, label);
-  }
-
-  public initialise(device: GPUDevice): void {
-    if (this.initialised) {
-      console.warn("Shader already initialised");
-
-      return;
-    }
-
-    const shaderModule = device.createShaderModule({
-      label: this.label,
-      code: this.code,
-    });
-
-    this.shaderModule = shaderModule;
-    this.initialised = true;
+    return new Shader(device, codeOverride(code), label);
   }
 }
 

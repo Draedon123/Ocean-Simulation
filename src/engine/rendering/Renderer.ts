@@ -1,8 +1,9 @@
 import { Camera } from "./Camera";
 import { Shader } from "./Shader";
-import { Cubemap } from "./Cubemap";
 import { SkyboxRenderer } from "./SkyboxRenderer";
 import { Ocean } from "../ocean/Ocean";
+import { Texture } from "./Texture";
+import { bufferData } from "@utils/bufferData";
 
 const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
@@ -20,6 +21,7 @@ type RendererSettings = {
   domainSize: number;
   textureSize: number;
   meshSize: number;
+  waveSpectrum: WaveSpectrum;
 };
 
 class Renderer {
@@ -28,11 +30,11 @@ class Renderer {
     domainSize: 2000,
     textureSize: 512,
     meshSize: 50,
+    waveSpectrum: "phillips",
   };
 
   public readonly settings: RendererSettings;
   public readonly canvasFormat: GPUTextureFormat;
-  public readonly skyboxRenderer: SkyboxRenderer;
 
   private readonly ctx: GPUCanvasContext;
 
@@ -45,6 +47,7 @@ class Renderer {
   private cameraBuffer!: GPUBuffer;
   private settingsBuffer!: GPUBuffer;
 
+  public skyboxRenderer!: SkyboxRenderer;
   private ocean!: Ocean;
 
   private constructor(
@@ -60,7 +63,6 @@ class Renderer {
 
     this.ctx = ctx;
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.skyboxRenderer = new SkyboxRenderer("Skybox Renderer");
     this.initialised = false;
 
     const settings = Object.assign(
@@ -93,7 +95,8 @@ class Renderer {
     this.ocean = await Ocean.create(
       this.device,
       this.settings.domainSize,
-      this.settings.textureSize
+      this.settings.textureSize,
+      this.settings.waveSpectrum
     );
 
     await this.initialiseRendering();
@@ -105,44 +108,38 @@ class Renderer {
       format: this.canvasFormat,
     });
 
-    const cubemap = new Cubemap("Skybox Cubemap");
-    await cubemap.initialise(
+    const cubemap = await Texture.createCubemap(
       this.device,
-      "skybox/px.png",
-      "skybox/nx.png",
-      "skybox/py.png",
-      "skybox/ny.png",
-      "skybox/pz.png",
-      "skybox/nz.png"
+      "Skybox Cubemap",
+      "skybox"
     );
 
-    await this.skyboxRenderer.initialise(this.device, this.canvasFormat);
-    this.skyboxRenderer.addSkybox(cubemap);
+    this.skyboxRenderer = await SkyboxRenderer.create(
+      this.device,
+      this.canvasFormat,
+      "Skybox Renderer"
+    );
 
+    this.skyboxRenderer.addSkybox(cubemap);
     this.skyboxRenderer.setActiveSkybox(cubemap);
 
-    const renderShaderModule = await Shader.from(
-      ["vertex", "fragment"],
+    const renderShaderModule = await Shader.create(
+      this.device,
+      ["rendering/vertex", "rendering/fragment"],
       "Renderer Shader Module"
     );
 
-    renderShaderModule.initialise(this.device);
+    this.cameraBuffer = bufferData(
+      this.device,
+      "Renderer Camera Buffer",
+      GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      Camera.BYTE_SIZE
+    );
 
-    this.cameraBuffer = this.device.createBuffer({
-      label: "Renderer Camera Buffer",
-      size: Camera.BYTE_SIZE,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.settingsBuffer = this.device.createBuffer({
-      label: "Renderer Settings Buffer",
-      size: 3 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.device.queue.writeBuffer(
-      this.settingsBuffer,
-      0,
+    this.settingsBuffer = bufferData(
+      this.device,
+      "Renderer Settings Buffer",
+      GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       new Float32Array([0, this.settings.meshSize, this.settings.domainSize])
     );
 

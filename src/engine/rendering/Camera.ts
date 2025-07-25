@@ -118,44 +118,43 @@ class Camera {
     return bufferWriter.toFloat32Array();
   }
 
-  public checkKeyboardInputs(): void {
+  public checkKeyboardInputs(deltaTime: number): void {
+    const movementSpeed = this.movementSpeed * deltaTime;
+
     if (this.keyboardManager.isKeyDown(this.keybinds.forwards)) {
       const forward = this.forward.clone();
       forward.y = 0;
-      this.position.add(Vector3.scale(forward.normalise(), this.movementSpeed));
+      this.position.add(forward.normalise().scale(movementSpeed));
     }
+
     if (this.keyboardManager.isKeyDown(this.keybinds.backwards)) {
       const forward = this.forward.clone();
       forward.y = 0;
-      this.position.subtract(
-        Vector3.scale(forward.normalise(), this.movementSpeed)
-      );
+      this.position.subtract(forward.normalise().scale(movementSpeed));
     }
+
     if (this.keyboardManager.isKeyDown(this.keybinds.left)) {
       const forward = this.forward.clone();
       forward.y = 0;
       this.position.subtract(
-        Vector3.scale(
-          Vector3.cross(forward, this.up).normalise(),
-          this.movementSpeed
-        )
+        Vector3.cross(forward, this.up).normalise().scale(movementSpeed)
       );
     }
+
     if (this.keyboardManager.isKeyDown(this.keybinds.right)) {
       const forward = this.forward.clone();
       forward.y = 0;
       this.position.add(
-        Vector3.scale(
-          Vector3.cross(forward, this.up).normalise(),
-          this.movementSpeed
-        )
+        Vector3.cross(forward, this.up).normalise().scale(movementSpeed)
       );
     }
+
     if (this.keyboardManager.isKeyDown(this.keybinds.up)) {
-      this.position.y += this.movementSpeed;
+      this.position.y += movementSpeed;
     }
+
     if (this.keyboardManager.isKeyDown(this.keybinds.down)) {
-      this.position.y -= this.movementSpeed;
+      this.position.y -= movementSpeed;
     }
   }
 

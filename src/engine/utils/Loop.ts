@@ -2,6 +2,7 @@ type Callback = (frameData: FrameData) => unknown;
 
 type FrameData = {
   deltaTimeMS: number;
+  deltaTimeSeconds: number;
   totalTimeMS: number;
 };
 
@@ -34,9 +35,12 @@ class Loop {
   }
 
   public tick(tickTime: number): void {
-    const deltaTime = tickTime - this.lastTick;
+    const deltaTimeMS = tickTime - this.lastTick;
+    const deltaTimeSeconds = deltaTimeMS / 1000;
+
     const frameData: FrameData = {
-      deltaTimeMS: deltaTime,
+      deltaTimeMS,
+      deltaTimeSeconds,
       totalTimeMS: tickTime,
     };
 

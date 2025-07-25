@@ -36,7 +36,7 @@ fn vertexMain(vertex: Vertex) -> VertexOutput {
   let samplePoint: vec2u = vec2u(vertex.position.xz * heightMapSize / settings.meshSize + heightMapSize / 2);
   let displacementData: vec2f = textureLoad(displacementField, samplePoint).rg;
   let dy: f32 = textureLoad(heightMap, samplePoint).x;
-  let slopeData: vec2f = textureLoad(slopeVector, samplePoint).rg * 20;
+  let slopeData: vec2f = textureLoad(slopeVector, samplePoint).rg * 5;
   let normal: vec3f = normalize(vec3f(-slopeData.x, 1, -slopeData.y));
 
   let vertexPosition: vec3f = vertex.position + vec3f(

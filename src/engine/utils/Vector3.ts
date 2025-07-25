@@ -1,5 +1,4 @@
 class Vector3 {
-  public static readonly ZERO: Vector3 = new Vector3();
   public readonly components: Float32Array;
   constructor(x: number = 0, y: number = 0, z: number = 0) {
     this.components = new Float32Array(3);
@@ -9,27 +8,27 @@ class Vector3 {
     this.components[2] = z;
   }
 
-  *[Symbol.iterator]() {
-    yield this.components[0];
-    yield this.components[1];
-    yield this.components[2];
-  }
+  // *[Symbol.iterator]() {
+  //   yield this.components[0];
+  //   yield this.components[1];
+  //   yield this.components[2];
+  // }
 
-  public static scale(vector3: Vector3, scalar: number): Vector3 {
-    return new Vector3(
-      vector3.components[0] * scalar,
-      vector3.components[1] * scalar,
-      vector3.components[2] * scalar
-    );
-  }
+  // public static scale(vector3: Vector3, scalar: number): Vector3 {
+  //   return new Vector3(
+  //     vector3.components[0] * scalar,
+  //     vector3.components[1] * scalar,
+  //     vector3.components[2] * scalar
+  //   );
+  // }
 
   public static add(a: Vector3, b: Vector3): Vector3 {
     return a.clone().add(b);
   }
 
-  public static subtract(a: Vector3, b: Vector3): Vector3 {
-    return a.clone().subtract(b);
-  }
+  // public static subtract(a: Vector3, b: Vector3): Vector3 {
+  //   return a.clone().subtract(b);
+  // }
 
   public static cross(a: Vector3, b: Vector3): Vector3 {
     const ax = a.components[0];
@@ -58,13 +57,13 @@ class Vector3 {
     return this;
   }
 
-  public multiply(vector3: Vector3): this {
-    this.components[0] *= vector3.components[0];
-    this.components[1] *= vector3.components[1];
-    this.components[2] *= vector3.components[2];
+  // public multiply(vector3: Vector3): this {
+  //   this.components[0] *= vector3.components[0];
+  //   this.components[1] *= vector3.components[1];
+  //   this.components[2] *= vector3.components[2];
 
-    return this;
-  }
+  //   return this;
+  // }
 
   public scale(scalar: number): this {
     this.components[0] *= scalar;

@@ -1,5 +1,3 @@
-const U_THRESHOLD: f32 = 1e-7;
-
 fn gaussian(state: vec2f) -> f32 {
   var value: f32 = 0;
   var i: f32 = 0;
@@ -10,7 +8,7 @@ fn gaussian(state: vec2f) -> f32 {
     let u: f32 = uniformFloat(state + i * 13.79813);
 
     // don't want to divide by 0
-    if(abs(u) < U_THRESHOLD){
+    if(abs(u) == 0){
       continue;
     }
 

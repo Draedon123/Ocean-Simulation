@@ -1,5 +1,6 @@
 import { callCompute } from "@rendering/callCompute";
 import { Shader } from "@rendering/Shader";
+import { bufferData } from "@utils/bufferData";
 
 class ButterflyTexture {
   private static shader: Shader | null = null;
@@ -12,15 +13,10 @@ class ButterflyTexture {
     private readonly height: number,
     shader: Shader
   ) {
-    const bitReversedIndicesBuffer = device.createBuffer({
-      label: "Butterfly Texture Bit Reversed Indices Buffer",
-      size: height * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-    });
-
-    device.queue.writeBuffer(
-      bitReversedIndicesBuffer,
-      0,
+    const bitReversedIndicesBuffer = bufferData(
+      device,
+      "Butterfly Texture Bit Reversed Indices Buffer",
+      GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
       this.bitReverseIndices(height)
     );
 
@@ -89,7 +85,7 @@ class ButterflyTexture {
     );
   }
 
-  private bitReverseIndices(numIndices: number) {
+  private bitReverseIndices(numIndices: number): Float32Array {
     const result = new Float32Array(numIndices);
     const numBits = Math.log2(numIndices);
 
@@ -110,12 +106,12 @@ class ButterflyTexture {
 
   private static async getShader(device: GPUDevice): Promise<Shader> {
     if (this.shader === null) {
-      const shader = await Shader.from(
-        ["butterflyTexture", "complexNumber"],
+      const shader = await Shader.create(
+        device,
+        ["compute/ifft/butterflyTexture", "utils/complexNumber"],
         "Butterfly Texture Shader Module"
       );
 
-      shader.initialise(device);
       this.shader = shader;
     }
 

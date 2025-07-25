@@ -1,57 +1,36 @@
 import { Matrix4Buffer } from "@utils/Matrix4Buffer";
 import { Shader } from "./Shader";
 import { Camera } from "./Camera";
-import { Cubemap } from "./Cubemap";
+import { Texture } from "./Texture";
 
 class SkyboxRenderer {
-  private initialised: boolean;
-
   private readonly inversePespectiveViewMatrix: Matrix4Buffer;
   private readonly bindGroups: GPUBindGroup[] = [];
   private activeSkybox: number;
-  private device!: GPUDevice;
   private renderBindGroupLayout!: GPUBindGroupLayout;
   private renderPipeline!: GPURenderPipeline;
 
-  public readonly skyboxes: Cubemap[];
+  public readonly skyboxes: Texture[];
   public sampler!: GPUSampler;
   constructor(
-    public readonly label: string = "",
-    ...skyboxes: Cubemap[]
+    private readonly device: GPUDevice,
+    shader: Shader,
+    canvasFormat: GPUTextureFormat,
+    public readonly label: string
   ) {
-    this.activeSkybox = skyboxes.length - 1;
-    this.skyboxes = skyboxes;
+    this.activeSkybox = -1;
+    this.skyboxes = [];
     this.bindGroups = [];
     this.inversePespectiveViewMatrix = new Matrix4Buffer(
+      device,
       `${this.label} Inverse Perspective View Matrix Buffer`
     );
 
-    this.initialised = false;
-  }
-
-  public async initialise(
-    device: GPUDevice,
-    canvasFormat: GPUTextureFormat
-  ): Promise<void> {
-    if (this.initialised) {
-      return;
-    }
-
-    this.device = device;
-    this.sampler = device.createSampler({
+    this.sampler = this.device.createSampler({
       label: `${this.label} Sampler`,
     });
 
-    this.inversePespectiveViewMatrix.initialise(device);
-
-    const renderShaderModule = await Shader.from(
-      "skybox",
-      `${this.label} Shader Module`
-    );
-
-    renderShaderModule.initialise(device);
-
-    this.renderBindGroupLayout = device.createBindGroupLayout({
+    this.renderBindGroupLayout = this.device.createBindGroupLayout({
       label: `${this.label} Bind Group Layout`,
       entries: [
         {
@@ -74,19 +53,19 @@ class SkyboxRenderer {
       ],
     });
 
-    const renderPipelineLayout = device.createPipelineLayout({
+    const renderPipelineLayout = this.device.createPipelineLayout({
       label: `${this.label} Render Pipeline Layout`,
       bindGroupLayouts: [this.renderBindGroupLayout],
     });
-    this.renderPipeline = device.createRenderPipeline({
+    this.renderPipeline = this.device.createRenderPipeline({
       label: `${this.label} Render Pipeline`,
       layout: renderPipelineLayout,
       vertex: {
-        module: renderShaderModule.shaderModule,
+        module: shader.shaderModule,
         entryPoint: "vertexMain",
       },
       fragment: {
-        module: renderShaderModule.shaderModule,
+        module: shader.shaderModule,
         entryPoint: "fragmentMain",
         targets: [{ format: canvasFormat }],
       },
@@ -103,11 +82,23 @@ class SkyboxRenderer {
       this.skyboxes.splice(0, 1);
       this.addSkybox(skybox);
     }
-
-    this.initialised = true;
   }
 
-  public addSkybox(skybox: Cubemap): void {
+  public static async create(
+    device: GPUDevice,
+    canvasFormat: GPUTextureFormat,
+    label: string
+  ): Promise<SkyboxRenderer> {
+    const shader = await Shader.create(
+      device,
+      "rendering/skybox",
+      `${label} Shader Module`
+    );
+
+    return new SkyboxRenderer(device, shader, canvasFormat, label);
+  }
+
+  public addSkybox(skybox: Texture): void {
     const renderBindGroup = this.device.createBindGroup({
       label: `${this.label} ${skybox.label} Bind Group`,
       layout: this.renderBindGroupLayout,
@@ -135,7 +126,7 @@ class SkyboxRenderer {
     this.bindGroups.push(renderBindGroup);
   }
 
-  public setActiveSkybox(skybox: Cubemap | null): void {
+  public setActiveSkybox(skybox: Texture | null): void {
     if (skybox === null) {
       this.activeSkybox = -1;
       return;
@@ -150,12 +141,6 @@ class SkyboxRenderer {
   }
 
   public render(renderPass: GPURenderPassEncoder, camera: Camera): void {
-    if (!this.initialised) {
-      console.error(`${this.label} not initialised`);
-
-      return;
-    }
-
     if (this.activeSkybox === -1) {
       console.warn("No active skybox");
 

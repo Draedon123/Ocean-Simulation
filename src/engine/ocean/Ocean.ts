@@ -1,21 +1,19 @@
 import { ButterflyTexture } from "./ButterflyTexture";
-import { DisplacementField } from "./DisplacementField";
 import { HeightAmplitudes } from "./HeightAmplitudes";
 import { IFFT } from "./IFFT";
-import { SlopeVector } from "./SlopeVector";
+import { SlopeAndDisplacement } from "./SlopeAndDisplacement";
+import { Spectrum } from "./Spectrum";
 
 class Ocean {
   private constructor(
     private readonly ifft: IFFT,
     private readonly heightAmplitudes: HeightAmplitudes,
-    private readonly _slopeVector: SlopeVector,
-    private readonly _displacementField: DisplacementField
+    private readonly slopeAndDisplacement: SlopeAndDisplacement
   ) {}
 
   public create(time: number): void {
     this.heightAmplitudes.createSpectrum(time);
-    this._slopeVector.create();
-    this._displacementField.create();
+    this.slopeAndDisplacement.create();
     this.ifft.compute();
   }
 
@@ -24,20 +22,29 @@ class Ocean {
   }
 
   public get slopeVector(): GPUTexture {
-    return this._slopeVector.slopeVector;
+    return this.slopeAndDisplacement.slopeVector;
   }
 
   public get displacementField(): GPUTexture {
-    return this._displacementField.displacementField;
+    return this.slopeAndDisplacement.displacementField;
   }
 
   public static async create(
     device: GPUDevice,
     domainSize: number,
-    textureSize: number
+    textureSize: number,
+    waveSpectrum: WaveSpectrum
   ): Promise<Ocean> {
+    const spectrum = await Spectrum.create(
+      device,
+      domainSize,
+      textureSize,
+      waveSpectrum
+    );
+
     const heightAmplitudes = await HeightAmplitudes.create(
       device,
+      spectrum,
       domainSize,
       textureSize
     );
@@ -54,7 +61,7 @@ class Ocean {
       butterflyTexture
     );
 
-    const normalMap = await SlopeVector.create(
+    const slopeAndDisplacement = await SlopeAndDisplacement.create(
       device,
       heightAmplitudes.texture,
       textureSize,
@@ -62,15 +69,7 @@ class Ocean {
       butterflyTexture
     );
 
-    const displacementField = await DisplacementField.create(
-      device,
-      heightAmplitudes.texture,
-      domainSize,
-      textureSize,
-      butterflyTexture
-    );
-
-    return new Ocean(ifft, heightAmplitudes, normalMap, displacementField);
+    return new Ocean(ifft, heightAmplitudes, slopeAndDisplacement);
   }
 }
 

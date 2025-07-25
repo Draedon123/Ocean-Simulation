@@ -4,8 +4,19 @@ struct JonswapParameters {
   U: f32,
 }
 
-fn JONSWAP(w: f32, theta: f32, parameters: JonswapParameters) -> f32 {
-  let gamma: f32 = 3.3;
+const GAMMA: f32 = 3.3;
+
+// TODO: FIX
+fn spectrumFunction(k: vec2f) -> f32 {
+  var parameters: JonswapParameters;
+
+  parameters.g = 9.81;
+  parameters.F = 400000;
+  parameters.U = 100;
+
+  let w: f32 = length(k);  
+  let theta: f32 = atan2(k.y, k.x);
+  
   let w_p: f32 = 22 * pow(parameters.U * parameters.F / (parameters.g * parameters.g), -0.33);
   let sigma: f32 = select(0.09, 0.07, w <= w_p);
   let alpha: f32 = 0.076 * pow(parameters.g * parameters.F / (parameters.U * parameters.U), -0.22);
@@ -15,7 +26,7 @@ fn JONSWAP(w: f32, theta: f32, parameters: JonswapParameters) -> f32 {
   return alpha * parameters.g * parameters.g * D *
     pow(w, -5) *
     exp(-1.25 * pow(w_p / w, 4)) *
-    pow(gamma, r);
+    pow(GAMMA, r);
 }
 
 fn cosine_2s(w: f32, w_p: f32, theta: f32) -> f32 {

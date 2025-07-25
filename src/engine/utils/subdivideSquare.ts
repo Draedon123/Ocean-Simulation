@@ -13,6 +13,7 @@ function subdivideSquare(
   for (let i = 0; i < vertexCount; i++) {
     const row = Math.floor(i / (tiles + 1));
     const column = i - (tiles + 1) * row;
+
     newVertices.push(
       meshStart + column * tileWidth,
       0,
@@ -20,16 +21,16 @@ function subdivideSquare(
     );
   }
 
-  for (let x = 0; x < tiles; x++) {
-    for (let y = 0; y < tiles; y++) {
-      const currentRowOffset = y * (tiles + 1);
-      const nextRowOffset = (y + 1) * (tiles + 1);
+  for (let y = 0; y < tiles; y++) {
+    const currentRowOffset = y * (tiles + 1);
+    const nextRowOffset = (y + 1) * (tiles + 1);
+
+    for (let x = 0; x < tiles; x++) {
       indices.push(
         currentRowOffset + x + 1,
         nextRowOffset + x + 1,
-        nextRowOffset + x
-      );
-      indices.push(
+        nextRowOffset + x,
+
         currentRowOffset + x,
         currentRowOffset + x + 1,
         nextRowOffset + x

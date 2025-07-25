@@ -16,7 +16,7 @@ fn horizontal(@builtin(global_invocation_id) id: vec3u) {
   let twiddleFactor: vec2f = data.rg;
 
   let value: vec2f = p + complexMultiply(q, twiddleFactor);
-  textureStore(textureOut, id.xy, vec4(value, 0.0, 0.0));
+  textureStore(textureOut, id.xy, vec4f(value, 0.0, 0.0));
 }
 
 @compute
@@ -28,5 +28,5 @@ fn vertical(@builtin(global_invocation_id) id: vec3u) {
   let twiddleFactor: vec2f = data.rg;
 
   let value: vec2f = p + complexMultiply(q, twiddleFactor);
-  textureStore(textureOut, id.xy, vec4(value, 0.0, 0.0));
+  textureStore(textureOut, id.xy, vec4f(value, 0.0, 0.0));
 }

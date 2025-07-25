@@ -1,7 +1,10 @@
 import { callCompute } from "@rendering/callCompute";
 import { Shader } from "@rendering/Shader";
+import { bufferData } from "@utils/bufferData";
 
 class Spectrum {
+  private static readonly shaders: Partial<Record<WaveSpectrum, Shader>> = {};
+
   private readonly bindGroup: GPUBindGroup;
   private readonly pipeline: GPUComputePipeline;
   public readonly spectrumTexture: GPUTexture;
@@ -11,15 +14,12 @@ class Spectrum {
     private readonly textureSize: number,
     shader: Shader
   ) {
-    shader.initialise(device);
-
-    const settingsBuffer = device.createBuffer({
-      label: "Spectrum Settings Buffer",
-      size: 1 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    device.queue.writeBuffer(settingsBuffer, 0, new Float32Array([domainSize]));
+    const settingsBuffer = bufferData(
+      device,
+      "Spectrum Settings Buffer",
+      GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      new Float32Array([domainSize])
+    );
 
     this.spectrumTexture = device.createTexture({
       label: "Spectrum Texture",
@@ -86,15 +86,36 @@ class Spectrum {
     );
   }
 
+  private static async getShader(
+    device: GPUDevice,
+    spectrum: WaveSpectrum
+  ): Promise<Shader> {
+    if (!(spectrum in Spectrum.shaders)) {
+      const shader = await Shader.create(
+        device,
+        [
+          "compute/spectrum",
+          "utils/random",
+          "utils/complexNumber",
+          "utils/waveVector",
+          `waveSpectra/${spectrum}`,
+        ],
+        "Spectrum Shader Module"
+      );
+
+      Spectrum.shaders[spectrum] = shader;
+    }
+
+    return Spectrum.shaders[spectrum] as Shader;
+  }
+
   public static async create(
     device: GPUDevice,
     domainSize: number,
-    textureSize: number
+    textureSize: number,
+    spectrum: WaveSpectrum
   ): Promise<Spectrum> {
-    const shader = await Shader.from(
-      ["spectrum", "random", "complexNumber"],
-      "Spectrum Shader Module"
-    );
+    const shader = await Spectrum.getShader(device, spectrum);
 
     return new Spectrum(device, domainSize, textureSize, shader);
   }

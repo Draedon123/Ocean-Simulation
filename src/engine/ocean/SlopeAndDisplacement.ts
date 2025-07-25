@@ -2,36 +2,30 @@ import { Shader } from "@rendering/Shader";
 import { ButterflyTexture } from "./ButterflyTexture";
 import { IFFT } from "./IFFT";
 import { callCompute } from "@rendering/callCompute";
+import { bufferData } from "@utils/bufferData";
 
-class SlopeVector {
+class SlopeAndDisplacement {
   private readonly settingsBuffer: GPUBuffer;
   private readonly bindGroup: GPUBindGroup;
   private readonly pipeline: GPUComputePipeline;
   private constructor(
     private readonly device: GPUDevice,
     shader: Shader,
-    private readonly ifft: IFFT,
+    private readonly slopeIFFT: IFFT,
+    private readonly displacementIFFT: IFFT,
     heightAmplitudesTexture: GPUTexture,
-    fourierComponentsTexture: GPUTexture,
     private readonly textureSize: number,
     domainSize: number
   ) {
-    shader.initialise(device);
-
-    this.settingsBuffer = device.createBuffer({
-      label: "Slope Vector Settings Buffer",
-      size: 1 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-    });
-
-    device.queue.writeBuffer(
-      this.settingsBuffer,
-      0,
+    this.settingsBuffer = bufferData(
+      device,
+      "Slope and Displacement Settings Buffer",
+      GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
       new Float32Array([domainSize])
     );
 
     const bindGroupLayout = device.createBindGroupLayout({
-      label: "Slope Vector Bind Group Layout",
+      label: "Slope and Displacement Bind Group Layout",
       entries: [
         {
           binding: 0,
@@ -54,11 +48,19 @@ class SlopeVector {
           },
           visibility: GPUShaderStage.COMPUTE,
         },
+        {
+          binding: 3,
+          storageTexture: {
+            access: "write-only",
+            format: "rg32float",
+          },
+          visibility: GPUShaderStage.COMPUTE,
+        },
       ],
     });
 
     this.bindGroup = device.createBindGroup({
-      label: "Slope Vector Bind Group",
+      label: "Slope and Displacement Bind Group",
       layout: bindGroupLayout,
       entries: [
         {
@@ -71,18 +73,22 @@ class SlopeVector {
         },
         {
           binding: 2,
-          resource: fourierComponentsTexture.createView(),
+          resource: slopeIFFT.texture_1.createView(),
+        },
+        {
+          binding: 3,
+          resource: displacementIFFT.texture_1.createView(),
         },
       ],
     });
 
     const pipelineLayout = device.createPipelineLayout({
-      label: "Slope Vector Pipeline Layout",
+      label: "Slope and Displacement Pipeline Layout",
       bindGroupLayouts: [bindGroupLayout],
     });
 
     this.pipeline = device.createComputePipeline({
-      label: "Slope Vector Compute Pipeline",
+      label: "Slope and Displacement Compute Pipeline",
       layout: pipelineLayout,
       compute: {
         module: shader.shaderModule,
@@ -99,11 +105,16 @@ class SlopeVector {
       this.device
     );
 
-    this.ifft.compute();
+    this.slopeIFFT.compute();
+    this.displacementIFFT.compute();
   }
 
   public get slopeVector(): GPUTexture {
-    return this.ifft.activeTexture;
+    return this.slopeIFFT.activeTexture;
+  }
+
+  public get displacementField(): GPUTexture {
+    return this.displacementIFFT.activeTexture;
   }
 
   public static async create(
@@ -112,38 +123,59 @@ class SlopeVector {
     textureSize: number,
     domainSize: number,
     butterflyTexture?: ButterflyTexture
-  ): Promise<SlopeVector> {
-    const shader = await Shader.from(
-      ["slopeVector", "complexNumber"],
-      "Slope Vector Shader Module"
+  ): Promise<SlopeAndDisplacement> {
+    const shader = await Shader.create(
+      device,
+      [
+        "compute/slopeAndDisplacement",
+        "utils/complexNumber",
+        "utils/waveVector",
+      ],
+      "Slope and Displacement Shader Module"
     );
 
-    const fourierComponentsTexture = device.createTexture({
+    const slopeFourierComponentsTexture = device.createTexture({
       label: "Slope Vector Fourier Components Texture",
       size: [textureSize, textureSize],
       format: "rg32float",
       usage: GPUTextureUsage.STORAGE_BINDING,
     });
 
-    const ifft = await IFFT.create(
+    const displacementFourierComponentsTexture = device.createTexture({
+      label: "Displacement Field Fourier Components Texture",
+      size: [textureSize, textureSize],
+      format: "rg32float",
+      usage: GPUTextureUsage.STORAGE_BINDING,
+    });
+
+    const slopeIFFT = await IFFT.create(
       device,
       textureSize,
-      fourierComponentsTexture,
+      slopeFourierComponentsTexture,
       2,
       "Slope Vector",
       butterflyTexture
     );
 
-    return new SlopeVector(
+    const displacementIFFT = await IFFT.create(
+      device,
+      textureSize,
+      displacementFourierComponentsTexture,
+      2,
+      "Displacement Field",
+      butterflyTexture
+    );
+
+    return new SlopeAndDisplacement(
       device,
       shader,
-      ifft,
+      slopeIFFT,
+      displacementIFFT,
       heightAmplitudesTexture,
-      fourierComponentsTexture,
       textureSize,
       domainSize
     );
   }
 }
 
-export { SlopeVector };
+export { SlopeAndDisplacement };

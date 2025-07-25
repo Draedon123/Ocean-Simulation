@@ -6,3 +6,5 @@ type Renderable = {
     camera: import("@rendering/Camera").Camera
   ) => void;
 };
+
+type WaveSpectrum = "phillips" | "JONSWAP";
