@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
 
+const additionalHMR: RegExp = /\.wgsl$/;
+
 export default defineConfig({
   build: {
     target: "esnext",
@@ -36,4 +38,16 @@ export default defineConfig({
   },
   base: "/Ocean-Simulation",
   publicDir: "assets",
+  plugins: [
+    {
+      name: "Additional HMR",
+      handleHotUpdate(ctx) {
+        if (!ctx.file.match(additionalHMR)) {
+          return;
+        }
+
+        ctx.server.ws.send({ type: "full-reload" });
+      },
+    },
+  ],
 });
